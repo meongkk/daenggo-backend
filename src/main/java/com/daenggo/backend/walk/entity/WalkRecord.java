@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.daenggo.backend.user.entity.User;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -33,9 +35,9 @@ public class WalkRecord {
 	private Long walkRecordId;
 	
 	
-//	@ManyToOne(fetch = FetchType.LAZY)
-//	@JoinColumn(name="user_id", nullable = false)
-//	private User user;						  					// 아직 entity가 없어 오류 발생 -> 주석 처리
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name="user_id", nullable = false)
+	private User user;
 	
 	@Column(length=200)
 	private String title;

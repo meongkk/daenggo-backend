@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.daenggo.backend.place.entity.Place;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -37,9 +39,9 @@ public class WalkPhoto {
 	@JoinColumn(name="walk_record_id", nullable = false)
 	private WalkRecord walkRecord;
 	
-//	@ManyToOne(fetch = FetchType.LAZY)
-//	@JoinColumn(name="place_id", nullable = false)
-//	private Place place; 						  					// 아직 entity가 없어 오류 발생 -> 주석 처리
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name="place_id", nullable = false)
+	private Place place;
 	
 	@Column(name="image_url", length = 1000, nullable = false)
 	private String imageUrl;

@@ -2,6 +2,7 @@ package com.daenggo.backend.walk.service;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -255,11 +256,25 @@ public class WalkService {
 	}
 
 	/**
-     * 월별 캘린더 조회
+     * 월별 산책 목록 조회(캘린더용)
      */
 	public WalkCalendarResponse getCalendar(Long userId, int year, int month) {
-		// TODO Auto-generated method stub
-		return null;
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+		
+		LocalDateTime start = LocalDate.of(year, month, 1).atStartOfDay();
+	    LocalDateTime end = start.plusMonths(1);
+	    
+	    List<LocalDate> walkDates = walkRecordRepository.findByUserAndStartedAtBetween(user, start, end)
+	    		.stream().map(walk -> walk.getStartedAt().toLocalDate())
+	    		.distinct()
+	    		.toList();
+	    
+	    WalkCalendarResponse response = WalkCalendarResponse.builder()
+	    		.walkDates(walkDates)
+	    		.build();
+	    
+		return response;
 	}
 
 	/**

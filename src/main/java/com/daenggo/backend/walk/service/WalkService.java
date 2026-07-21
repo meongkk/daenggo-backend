@@ -19,6 +19,7 @@ import com.daenggo.backend.walk.dto.WalkRequestDto.WalkCompleteRequest;
 import com.daenggo.backend.walk.dto.WalkRequestDto.WalkPhotoUploadRequest;
 import com.daenggo.backend.walk.dto.WalkRequestDto.WalkRouteBatchRequest;
 import com.daenggo.backend.walk.dto.WalkRequestDto.WalkUpdateRequest;
+import com.daenggo.backend.walk.dto.WalkResponseDto.RoutePointResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkCalendarResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkCompleteResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkDetailResponse;
@@ -181,8 +182,28 @@ public class WalkService {
      * 산책 경로 조회
      */
 	public WalkRouteResponse getWalkRoute(Long userId, Long walkId) {
-		// TODO Auto-generated method stub
-		return null;
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+		
+
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
+		
+		List<WalkRouteRecord> routeRecords = walkRouteRecordRepository.findByWalkOrderBySequenceNoAsc(walk);
+		
+		List<RoutePointResponse> routePoints = routeRecords.stream()
+				.map(route -> RoutePointResponse.builder()
+						.sequenceNo(route.getSequenceNo())
+						.latitude(route.getLatitude())
+						.longitude(route.getLongitude())
+						.build()
+						).toList();
+		
+		WalkRouteResponse response = WalkRouteResponse.builder()
+				.routePoints(routePoints)
+				.build();
+		
+		return response;
 	}
 
 	/**

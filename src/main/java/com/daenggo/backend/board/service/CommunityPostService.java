@@ -92,6 +92,34 @@ public class CommunityPostService {
     }
 
     /**
+     * 삭제되지 않은 게시글 상세를 조회하고 조회수를 1 증가시킨다.
+     * 트랜잭션 안에서 엔티티 값을 변경하므로 변경 감지에 의해 DB에 반영된다.
+     *
+     * @param postId 조회할 게시글 식별자
+     * @return 조회수가 증가된 게시글 상세 응답
+     * @throws ResponseStatusException 게시글이 없거나 삭제된 경우
+     */
+    @Transactional
+    public BoardResponse getPost(Long postId) {
+        Board board = boardRepository.findById(postId)
+                .filter(item -> item.getDeletedAt() == null)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "게시글을 찾을 수 없습니다. postId=" + postId
+                ));
+
+        board.increaseViewCount();
+
+        List<String> imageUrls = boardImageRepository
+                .findAllByBoard_IdInOrderByIdAsc(List.of(postId))
+                .stream()
+                .map(BoardImage::getImageUrl)
+                .toList();
+
+        return BoardResponse.from(board, imageUrls);
+    }
+
+    /**
      * 작성자를 확인하고 새로운 커뮤니티 게시글을 저장한다.
      *
      * @param category 게시글을 등록할 커뮤니티 카테고리

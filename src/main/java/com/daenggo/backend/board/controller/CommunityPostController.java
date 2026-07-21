@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -49,6 +50,17 @@ public class CommunityPostController {
             @RequestParam CommunityCategory category
     ) {
         return ResponseEntity.ok(communityPostService.getPosts(category));
+    }
+
+    /**
+     * 게시글 상세를 조회하고 조회수를 1 증가시킨다.
+     *
+     * @param postId 조회할 게시글 식별자
+     * @return 조회수가 증가된 게시글 상세
+     */
+    @GetMapping("/{postId}")
+    public ResponseEntity<BoardResponse> getPost(@PathVariable Long postId) {
+        return ResponseEntity.ok(communityPostService.getPost(postId));
     }
 
     /**

@@ -58,8 +58,25 @@ public class WalkRecord {
 	@Column(name="distance_m", precision=12, scale=2)
 	private BigDecimal distanceM;
 	
-	@Column(name="avg_speed_kmh", precision=6, scale=2)
-	private BigDecimal avgSpeedKmh;
+	@Column(name="avg_pace_sec")
+	private Integer avgPaceSec;
 	
+	public void complete(
+			String title,
+			String memo,
+			LocalDateTime endedAt,
+			Integer durationSec,
+			BigDecimal distanceM,
+			Integer avgPaceSec
+			
+			) {
+		this.title = title;
+		this.memo = memo;
+		this.endedAt = endedAt;
+		this.durationSec = durationSec;
+		this.distanceM = distanceM;
+		this.avgPaceSec = avgPaceSec;
+		
+	}
 	
 }

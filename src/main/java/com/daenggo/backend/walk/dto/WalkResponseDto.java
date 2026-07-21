@@ -74,7 +74,7 @@ public class WalkResponseDto {
 
         private Integer durationSec;
 
-        private BigDecimal avgSpeedKmh;
+        private Integer avgPaceSec;
 
         private String status;
 

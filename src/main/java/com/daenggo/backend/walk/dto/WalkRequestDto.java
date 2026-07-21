@@ -20,7 +20,6 @@ public class WalkRequestDto {
 
         private BigDecimal distanceM;
 
-        private String status;
     }
 
     @Getter
@@ -48,7 +47,6 @@ public class WalkRequestDto {
 
         private String memo;
 
-        private String status;
     }
 
     @Getter

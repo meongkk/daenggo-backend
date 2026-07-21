@@ -76,8 +76,6 @@ public class WalkResponseDto {
 
         private Integer avgPaceSec;
 
-        private String status;
-
         private List<Long> petIds;
     }
 

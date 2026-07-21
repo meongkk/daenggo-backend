@@ -1,0 +1,32 @@
+name: daenggo
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: daenggo-mysql
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-root1234}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-daenggo}"
+      MYSQL_USER: "${MYSQL_USER:-daenggo}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-daenggo1234}"
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  mysql-data:
+    name: daenggo-mysql-data-rootonly

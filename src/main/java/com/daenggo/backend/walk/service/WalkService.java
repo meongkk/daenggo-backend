@@ -209,9 +209,35 @@ public class WalkService {
 	/**
      * 산책 기록 수정
      */
+	@Transactional
 	public WalkDetailResponse updateWalk(Long userId, Long walkId, WalkUpdateRequest request) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+		
+
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
+		
+		walk.update(request.getTitle(), request.getMemo());
+		
+		List<Long> petIds = walkRecordPetRepository.findByWalk(walk)
+				.stream()
+				.map(pet -> pet.getPet().getId())
+				.toList();
+		
+		WalkDetailResponse response = WalkDetailResponse.builder()
+				.walkRecordId(walk.getWalkRecordId())
+				.title(walk.getTitle())
+				.memo(walk.getMemo())
+				.startedAt(walk.getStartedAt())
+				.distanceM(walk.getDistanceM())
+				.durationSec(walk.getDurationSec())
+				.avgPaceSec(walk.getAvgPaceSec())
+				.petIds(petIds)
+				.build();
+		
+		return response;
 	}
 
 	/**

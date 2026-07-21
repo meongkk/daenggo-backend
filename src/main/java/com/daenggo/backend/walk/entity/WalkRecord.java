@@ -79,4 +79,9 @@ public class WalkRecord {
 		
 	}
 	
+	public void update(String title, String memo) {
+		this.title = title;
+		this.memo = memo;
+	}
+	
 }

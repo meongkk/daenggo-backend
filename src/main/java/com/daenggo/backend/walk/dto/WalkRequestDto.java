@@ -25,13 +25,11 @@ public class WalkRequestDto {
     @Getter
     public static class RoutePointRequest {        // GPS 좌표 저장
 
-        private Long sequenceNo;
+        private Integer sequenceNo;
 
         private BigDecimal latitude;
 
         private BigDecimal longitude;
-
-        private BigDecimal altitudeM;
     }
 
     @Getter

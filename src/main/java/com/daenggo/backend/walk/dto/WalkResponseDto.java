@@ -75,7 +75,6 @@ public class WalkResponseDto {
 
         private BigDecimal longitude;
 
-        private BigDecimal altitudeM;
     }
 
     @Getter

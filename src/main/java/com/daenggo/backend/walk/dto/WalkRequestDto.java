@@ -1,10 +1,12 @@
 package com.daenggo.backend.walk.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.persistence.Column;
 import lombok.Getter;
 
 public class WalkRequestDto {
@@ -59,5 +61,7 @@ public class WalkRequestDto {
         private BigDecimal longitude;
 
         private Long placeId;
+        
+    	private LocalDateTime takenAt;
     }
 }

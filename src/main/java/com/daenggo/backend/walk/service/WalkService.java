@@ -1,15 +1,21 @@
 package com.daenggo.backend.walk.service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.daenggo.backend.pet.entity.Pet;
 import com.daenggo.backend.pet.repository.PetRepository;
@@ -27,9 +33,11 @@ import com.daenggo.backend.walk.dto.WalkResponseDto.WalkDetailResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkPhotoResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkRouteResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkStartResponse;
+import com.daenggo.backend.walk.entity.WalkPhoto;
 import com.daenggo.backend.walk.entity.WalkRecord;
 import com.daenggo.backend.walk.entity.WalkRecordPet;
 import com.daenggo.backend.walk.entity.WalkRouteRecord;
+import com.daenggo.backend.walk.repository.WalkPhotoRepository;
 import com.daenggo.backend.walk.repository.WalkRecordPetRepository;
 import com.daenggo.backend.walk.repository.WalkRecordRepository;
 import com.daenggo.backend.walk.repository.WalkRouteRecordRepository;
@@ -46,6 +54,7 @@ public class WalkService {
 	private final UserRepository userRepository;
 	private final PetRepository petRepository;
 	private final WalkRecordPetRepository walkRecordPetRepository;
+	private final WalkPhotoRepository walkPhotoRepository;
 	
 	/**
      * 산책 시작
@@ -281,16 +290,91 @@ public class WalkService {
      * 산책 사진 등록
      */
 	public WalkPhotoResponse uploadPhoto(Long userId, Long walkId, WalkPhotoUploadRequest request) {
-		// TODO Auto-generated method stub
-		return null;
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+		
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
+		
+		MultipartFile image = request.getImage();
+
+	    if (image == null || image.isEmpty()) {
+	        throw new IllegalArgumentException("이미지가 없습니다.");
+	    }
+
+
+	    // 파일 저장
+	    String originalFilename = image.getOriginalFilename();
+
+	    String fileName = UUID.randomUUID() 
+	            + "_" 
+	            + originalFilename;
+
+
+	    String uploadPath = "uploads/walk/";
+
+	    Path filePath = Paths.get(uploadPath + fileName);
+
+
+	    try {
+	        Files.createDirectories(filePath.getParent());
+	        image.transferTo(filePath);
+
+	    } catch (IOException e) {
+	        throw new RuntimeException("파일 저장 실패", e);
+	    }
+
+
+	    // DB 저장용 URL 생성
+	    String imageUrl = "/uploads/walk/" + fileName;
+	   
+	    // 3. Entity 생성
+	    WalkPhoto photo = WalkPhoto.builder()
+	            .walkRecord(walk)
+	            .imageUrl(imageUrl)
+	            .caption(request.getCaption())
+	            .latitude(request.getLatitude())
+	            .longitude(request.getLongitude())
+	            .takenAt(request.getTakenAt())
+	            .build();
+
+	    WalkPhoto savedPhoto = walkPhotoRepository.save(photo);
+
+	    WalkPhotoResponse response = WalkPhotoResponse.builder()
+        .photoId(savedPhoto.getWalkPhotoId())
+        .imageUrl(savedPhoto.getImageUrl())
+        .caption(savedPhoto.getCaption())
+        .latitude(savedPhoto.getLatitude())
+        .longitude(savedPhoto.getLongitude())
+        .takenAt(savedPhoto.getTakenAt())
+        .build();
+
+	    return response;
 	}
 
 	/**
      * 산책 사진 삭제
      */
+	@Transactional
 	public void deletePhoto(Long userId, Long walkId, Long photoId) {
-		// TODO Auto-generated method stub
 		
+		WalkPhoto photo = walkPhotoRepository.findById(photoId)
+				.orElseThrow(() -> new IllegalArgumentException("사진을 찾을 수 없습니다."));
+		
+	    // 해당 사진이 요청한 산책의 사진인지 확인
+	    if (!photo.getWalkRecord().getWalkRecordId().equals(walkId)) {
+	        throw new IllegalArgumentException("해당 산책의 사진이 아닙니다.");
+	    }
+
+	    // 해당 산책의 주인이 맞는지 확인
+	    if (!photo.getWalkRecord().getUser().getId().equals(userId)) {
+	        throw new IllegalArgumentException("삭제 권한이 없습니다.");
+	    }
+
+	    // TODO: S3 이미지 삭제 추가
+	    // imageService.delete(photo.getImageUrl());
+
+	    walkPhotoRepository.delete(photo);
 	}
 	
 }

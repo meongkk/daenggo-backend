@@ -39,10 +39,6 @@ public class WalkPhoto {
 	@JoinColumn(name="walk_record_id", nullable = false)
 	private WalkRecord walkRecord;
 	
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name="place_id", nullable = false)
-	private Place place;
-	
 	@Column(name="image_url", length = 1000, nullable = false)
 	private String imageUrl;
 	

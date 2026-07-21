@@ -244,7 +244,13 @@ public class WalkService {
      * 산책 기록 삭제
      */
 	public void deleteWalk(Long userId, Long walkId) {
-		// TODO Auto-generated method stub
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+		
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
+		
+		walk.delete();
 		
 	}
 

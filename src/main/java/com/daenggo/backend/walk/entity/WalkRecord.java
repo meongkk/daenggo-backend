@@ -61,6 +61,9 @@ public class WalkRecord {
 	@Column(name="avg_pace_sec")
 	private Integer avgPaceSec;
 	
+	@Column(name = "is_deleted", nullable = false)
+	private boolean isDeleted = false;
+	
 	public void complete(
 			String title,
 			String memo,
@@ -82,6 +85,10 @@ public class WalkRecord {
 	public void update(String title, String memo) {
 		this.title = title;
 		this.memo = memo;
+	}
+	
+	public void delete() {
+		this.isDeleted = true;
 	}
 	
 }

@@ -12,7 +12,7 @@ public class WalkResponseDto {
 
     @Getter
     @Builder
-    public static class WalkeStartResponse {        // 산책 시작 시
+    public static class WalkStartResponse {        // 산책 시작 시
 
         private Long walkRecordId;
 

@@ -28,7 +28,6 @@ public class WalkResponseDto {
 
         private LocalDateTime endedAt;
 
-        private String status;
     }
 
     @Getter

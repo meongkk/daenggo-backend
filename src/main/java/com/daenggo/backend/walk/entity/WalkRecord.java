@@ -61,7 +61,5 @@ public class WalkRecord {
 	@Column(name="avg_speed_kmh", precision=6, scale=2)
 	private BigDecimal avgSpeedKmh;
 	
-	@Column(length = 20, nullable = false)
-	private String status;
 	
 }

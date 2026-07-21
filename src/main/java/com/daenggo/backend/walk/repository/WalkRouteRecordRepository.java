@@ -5,10 +5,10 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.daenggo.backend.walk.entity.WalkRecord;
-import com.daenggo.backend.walk.entity.walkRouteRecord;
+import com.daenggo.backend.walk.entity.WalkRouteRecord;
 
-public interface WalkRouteRecordRepository extends JpaRepository<walkRouteRecord, Long> {
+public interface WalkRouteRecordRepository extends JpaRepository<WalkRouteRecord, Long> {
 
 	// 경로 조회
-    List<walkRouteRecord> findByWalkOrderBySequenceNoAsc(WalkRecord walkRecord);
+    List<WalkRouteRecord> findByWalkOrderBySequenceNoAsc(WalkRecord walkRecord);
 }

@@ -27,7 +27,7 @@ import com.daenggo.backend.walk.dto.WalkResponseDto.WalkRouteResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkStartResponse;
 import com.daenggo.backend.walk.entity.WalkRecord;
 import com.daenggo.backend.walk.entity.WalkRecordPet;
-import com.daenggo.backend.walk.entity.walkRouteRecord;
+import com.daenggo.backend.walk.entity.WalkRouteRecord;
 import com.daenggo.backend.walk.repository.WalkRecordPetRepository;
 import com.daenggo.backend.walk.repository.WalkRecordRepository;
 import com.daenggo.backend.walk.repository.WalkRouteRecordRepository;
@@ -75,13 +75,12 @@ public class WalkService {
 		
 		List<RoutePointRequest> points = request.getTrackPoints();
 		
-		List<walkRouteRecord> routes = points.stream()
-			    .map(point -> walkRouteRecord.builder()
+		List<WalkRouteRecord> routes = points.stream()
+			    .map(point -> WalkRouteRecord.builder()
 			        .walkRecord(walk)
 			        .sequenceNo(point.getSequenceNo())
 			        .latitude(point.getLatitude())
 			        .longitude(point.getLongitude())
-			        .altitudeM(point.getAltitudeM())
 			        .build())
 			    .toList();
 		

@@ -1,93 +1,164 @@
 package com.daenggo.backend.walk.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+
+import com.daenggo.backend.user.entity.User;
+import com.daenggo.backend.user.repository.UserRepository;
+import com.daenggo.backend.walk.dto.WalkRequestDto.RoutePointRequest;
+import com.daenggo.backend.walk.dto.WalkRequestDto.WalkCompleteRequest;
+import com.daenggo.backend.walk.dto.WalkRequestDto.WalkPhotoUploadRequest;
+import com.daenggo.backend.walk.dto.WalkRequestDto.WalkRouteBatchRequest;
+import com.daenggo.backend.walk.dto.WalkRequestDto.WalkUpdateRequest;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkCalendarResponse;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkCompleteRequest;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkCompleteResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkDetailResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkListResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkPhotoResponse;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkPhotoUploadRequest;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkRouteBatchRequest;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkRouteResponse;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkUpdateRequest;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkeStartResponse;
+import com.daenggo.backend.walk.dto.WalkResponseDto.WalkStartResponse;
+import com.daenggo.backend.walk.entity.WalkRecord;
+import com.daenggo.backend.walk.entity.walkRouteRecord;
+import com.daenggo.backend.walk.repository.WalkRecordRepository;
+import com.daenggo.backend.walk.repository.WalkRouteRecordRepository;
 
-public interface WalkService {
+import lombok.RequiredArgsConstructor;
 
-    /**
+@Service
+@RequiredArgsConstructor
+public class WalkService {
+	
+	private final WalkRecordRepository walkRecordRepository;
+	private final WalkRouteRecordRepository walkRouteRecordRepository;
+	private final UserRepository userRepository;
+	
+	/**
      * 산책 시작
      */
-    WalkeStartResponse startWalk(Long userId);
+	public WalkStartResponse startWalk(Long userId) {
+		
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+		WalkRecord walk = WalkRecord.builder()
+				.user(user)
+				.build();
+		
+		WalkRecord result = walkRecordRepository.save(walk);
+		WalkStartResponse response = WalkStartResponse.builder()
+				.walkRecordId(result.getWalkRecordId())
+				.startedAt(result.getStartedAt())
+				.build();
+		
+		
+		return response;
+	}
 
-    /**
+	/**
      * GPS 좌표 일괄 저장
      */
-    void saveTrackPoints(Long walkId, WalkRouteBatchRequest request);
+	public void saveTrackPoints(Long walkId, WalkRouteBatchRequest request) {
+		WalkRecord walk = walkRecordRepository.findById(walkId)
+			    .orElseThrow(() -> new IllegalArgumentException("산책이 없습니다."));
+		
+		List<RoutePointRequest> points = request.getTrackPoints();
+		
+		List<walkRouteRecord> routes = points.stream()
+			    .map(point -> walkRouteRecord.builder()
+			        .walkRecord(walk)
+			        .sequenceNo(point.getSequenceNo())
+			        .latitude(point.getLatitude())
+			        .longitude(point.getLongitude())
+			        .altitudeM(point.getAltitudeM())
+			        .build())
+			    .toList();
+		
+		walkRouteRecordRepository.saveAll(routes);
+		
+	}
 
-    /**
+	/**
      * 산책 종료
      */
-    WalkCompleteResponse completeWalk(
-            Long userId,
-            Long walkId,
-            WalkCompleteRequest request
-    );
+	public WalkCompleteResponse completeWalk(Long userId, Long walkId, WalkCompleteRequest request) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+		
+		WalkRecord walk = walkRecordRepository.findById(walkId)
+			    .orElseThrow(() -> new IllegalArgumentException("산책이 없습니다."));
+		
+		WalkCompleteResponse response = WalkCompleteResponse.builder()
+				.walkRecordId(walkId)
+				.endedAt(LocalDateTime.now())
+				.build();
+		
+		return null;
+	}
 
-    /**
+	
+	/**
      * 산책 목록 조회
      */
-    List<WalkListResponse> getWalkList(Long userId);
+	public List<WalkListResponse> getWalkList(Long userId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-    /**
+	/**
      * 산책 상세 조회
      */
-    WalkDetailResponse getWalk(Long userId, Long walkId);
+	public WalkDetailResponse getWalk(Long userId, Long walkId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-    /**
+	/**
      * 산책 경로 조회
      */
-    WalkRouteResponse getWalkRoute(Long userId, Long walkId);
+	public WalkRouteResponse getWalkRoute(Long userId, Long walkId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-    /**
+	/**
      * 산책 기록 수정
      */
-    WalkDetailResponse updateWalk(
-            Long userId,
-            Long walkId,
-            WalkUpdateRequest request
-    );
+	public WalkDetailResponse updateWalk(Long userId, Long walkId, WalkUpdateRequest request) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-    /**
+	/**
      * 산책 기록 삭제
      */
-    void deleteWalk(Long userId, Long walkId);
+	public void deleteWalk(Long userId, Long walkId) {
+		// TODO Auto-generated method stub
+		
+	}
 
-    /**
+	/**
      * 월별 캘린더 조회
      */
-    WalkCalendarResponse getCalendar(
-            Long userId,
-            int year,
-            int month
-    );
+	public WalkCalendarResponse getCalendar(Long userId, int year, int month) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-    /**
+	/**
      * 산책 사진 등록
      */
-    WalkPhotoResponse uploadPhoto(
-            Long userId,
-            Long walkId,
-            WalkPhotoUploadRequest request
-    );
+	public WalkPhotoResponse uploadPhoto(Long userId, Long walkId, WalkPhotoUploadRequest request) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-    /**
+	/**
      * 산책 사진 삭제
      */
-    void deletePhoto(
-            Long userId,
-            Long walkId,
-            Long photoId
-    );
+	public void deletePhoto(Long userId, Long walkId, Long photoId) {
+		// TODO Auto-generated method stub
+		
+	}
+	
 }

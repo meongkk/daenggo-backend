@@ -49,8 +49,6 @@ public class WalkResponseDto {
 
         private LocalDateTime startedAt;
 
-        private LocalDateTime endedAt;
-
         private BigDecimal distanceM;
 
         private Integer durationSec;

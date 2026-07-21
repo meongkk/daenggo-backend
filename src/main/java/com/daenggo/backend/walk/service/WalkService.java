@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.daenggo.backend.pet.entity.Pet;
@@ -148,8 +150,32 @@ public class WalkService {
      * 산책 상세 조회
      */
 	public WalkDetailResponse getWalk(Long userId, Long walkId) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+		
+
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
+
+		
+		List<Long> petIds = walkRecordPetRepository.findByWalk(walk)
+				.stream()
+				.map(pet -> pet.getPet().getId())
+				.toList();
+		
+		WalkDetailResponse response = WalkDetailResponse.builder()
+				.walkRecordId(walk.getWalkRecordId())
+				.title(walk.getTitle())
+				.memo(walk.getMemo())
+				.startedAt(walk.getStartedAt())
+				.distanceM(walk.getDistanceM())
+				.durationSec(walk.getDurationSec())
+				.avgPaceSec(walk.getAvgPaceSec())
+				.petIds(petIds)
+				.build();
+		
+		return response;
 	}
 
 	/**

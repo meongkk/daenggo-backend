@@ -3,8 +3,10 @@ package com.daenggo.backend.board.entity;
 import com.daenggo.backend.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -42,6 +44,7 @@ public class Board {
     private Integer viewCount = 0;
 
     @CreatedDate
+    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -52,7 +55,7 @@ public class Board {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-
+    @Builder
     public Board(String type, String title, String content ,User user) {
         this.type = type;
         this.title = title;

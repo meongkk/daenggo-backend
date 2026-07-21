@@ -39,25 +39,6 @@ public class WalkResponseDto {
 
     @Getter
     @Builder
-    public static class WalkListResponse {          // 산책 목록 조회
-
-        private Long walkRecordId;
-
-        private String title;
-
-        private LocalDate walkDate;
-
-        private BigDecimal distanceM;
-
-        private Integer durationSec;
-
-        private String thumbnailImage;
-
-        private String status;
-    }
-
-    @Getter
-    @Builder
     public static class WalkDetailResponse {        // 산책 상세 조회
 
         private Long walkRecordId;

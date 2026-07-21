@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -19,7 +20,6 @@ import com.daenggo.backend.walk.dto.WalkRequestDto.WalkUpdateRequest;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkCalendarResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkCompleteResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkDetailResponse;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkListResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkPhotoResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkRouteResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkStartResponse;
@@ -142,15 +142,6 @@ public class WalkService {
 				.build();
 		
 		return response;
-	}
-
-	
-	/**
-     * 산책 목록 조회
-     */
-	public List<WalkListResponse> getWalkList(Long userId) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	/**

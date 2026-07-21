@@ -1,10 +1,14 @@
 package com.daenggo.backend.walk.service;
 
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.daenggo.backend.pet.entity.Pet;
+import com.daenggo.backend.pet.repository.PetRepository;
 import com.daenggo.backend.user.entity.User;
 import com.daenggo.backend.user.repository.UserRepository;
 import com.daenggo.backend.walk.dto.WalkRequestDto.RoutePointRequest;
@@ -20,10 +24,13 @@ import com.daenggo.backend.walk.dto.WalkResponseDto.WalkPhotoResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkRouteResponse;
 import com.daenggo.backend.walk.dto.WalkResponseDto.WalkStartResponse;
 import com.daenggo.backend.walk.entity.WalkRecord;
+import com.daenggo.backend.walk.entity.WalkRecordPet;
 import com.daenggo.backend.walk.entity.walkRouteRecord;
+import com.daenggo.backend.walk.repository.WalkRecordPetRepository;
 import com.daenggo.backend.walk.repository.WalkRecordRepository;
 import com.daenggo.backend.walk.repository.WalkRouteRecordRepository;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -33,6 +40,8 @@ public class WalkService {
 	private final WalkRecordRepository walkRecordRepository;
 	private final WalkRouteRecordRepository walkRouteRecordRepository;
 	private final UserRepository userRepository;
+	private final PetRepository petRepository;
+	private final WalkRecordPetRepository walkRecordPetRepository;
 	
 	/**
      * 산책 시작
@@ -81,19 +90,58 @@ public class WalkService {
 	/**
      * 산책 종료
      */
+	@Transactional
 	public WalkCompleteResponse completeWalk(Long userId, Long walkId, WalkCompleteRequest request) {
-		User user = userRepository.findById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
 		WalkRecord walk = walkRecordRepository.findById(walkId)
-			    .orElseThrow(() -> new IllegalArgumentException("산책이 없습니다."));
+		        .orElseThrow(() -> new IllegalArgumentException("산책이 없습니다."));
+		
+		
+		// 산책 시간 계산(단위 : sec)
+		int durationSec = (int) Duration.between(
+	            walk.getStartedAt(),
+	            walk.getEndedAt()
+	    ).getSeconds();
+		
+		// 평균 페이스 계산 (단위 : sec)
+		int avgPaceSec = 0;
+		if (durationSec > 0) {
+	        avgPaceSec =
+	        		(int) (durationSec / (request.getDistanceM().doubleValue() / 1000.0));
+	    }
+		
+		walk.complete(request.getTitle(), 
+				request.getMemo(), 
+				LocalDateTime.now(),
+				durationSec,
+				request.getDistanceM(),
+				avgPaceSec
+				);
+		
+		WalkRecord result = walkRecordRepository.save(walk);
+		
+		
+		// 참여 반려동물 저장
+		for (Long petId : request.getPetIds()) {
+
+	        Pet pet = petRepository.findById(petId)
+	                .orElseThrow(() -> new IllegalArgumentException("반려동물이 없습니다."));
+
+	        WalkRecordPet walkRecordPet = WalkRecordPet.builder()
+	                .walkRecord(walk)
+	                .pet(pet)
+	                .build();
+
+	        walkRecordPetRepository.save(walkRecordPet);
+	    }
+		
 		
 		WalkCompleteResponse response = WalkCompleteResponse.builder()
-				.walkRecordId(walkId)
-				.endedAt(LocalDateTime.now())
+				.walkRecordId(result.getWalkRecordId())
+				.endedAt(result.getEndedAt())
 				.build();
 		
-		return null;
+		return response;
 	}
 
 	

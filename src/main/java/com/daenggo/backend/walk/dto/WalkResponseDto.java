@@ -1,5 +1,6 @@
 package com.daenggo.backend.walk.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -47,7 +48,7 @@ public class WalkResponseDto {
 
         private LocalDate walkDate;
 
-        private Double distanceM;
+        private BigDecimal distanceM;
 
         private Integer durationSec;
 
@@ -70,11 +71,11 @@ public class WalkResponseDto {
 
         private LocalDateTime endedAt;
 
-        private Double distanceM;
+        private BigDecimal distanceM;
 
         private Integer durationSec;
 
-        private Double avgSpeedKmh;
+        private BigDecimal avgSpeedKmh;
 
         private String status;
 
@@ -94,11 +95,11 @@ public class WalkResponseDto {
 
         private Integer sequenceNo;
 
-        private Double latitude;
+        private BigDecimal latitude;
 
-        private Double longitude;
+        private BigDecimal longitude;
 
-        private Double altitudeM;
+        private BigDecimal altitudeM;
     }
 
     @Getter
@@ -118,9 +119,9 @@ public class WalkResponseDto {
 
         private String caption;
 
-        private Double latitude;
+        private BigDecimal latitude;
 
-        private Double longitude;
+        private BigDecimal longitude;
 
         private LocalDateTime takenAt;
     }

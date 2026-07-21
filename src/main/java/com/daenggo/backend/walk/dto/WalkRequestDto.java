@@ -1,5 +1,6 @@
 package com.daenggo.backend.walk.dto;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -17,7 +18,7 @@ public class WalkRequestDto {
 
         private List<Long> petIds;
 
-        private Double distanceM;
+        private BigDecimal distanceM;
 
         private String status;
     }
@@ -27,11 +28,11 @@ public class WalkRequestDto {
 
         private Long sequenceNo;
 
-        private Double latitude;
+        private BigDecimal latitude;
 
-        private Double longitude;
+        private BigDecimal longitude;
 
-        private Double altitudeM;
+        private BigDecimal altitudeM;
     }
 
     @Getter
@@ -57,9 +58,9 @@ public class WalkRequestDto {
 
         private String caption;
 
-        private Double latitude;
+        private BigDecimal latitude;
 
-        private Double longitude;
+        private BigDecimal longitude;
 
         private Long placeId;
     }

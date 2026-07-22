@@ -54,11 +54,7 @@ public class PetService {
      */
     public PetResponseDto.Detail getMyPet(final String email, final Long petId) {
         final User user = findActiveUser(email);
-        final Pet pet = petRepository.findByIdAndUserId(petId, user.getId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "반려동물을 찾을 수 없습니다."
-                ));
+        final Pet pet = findOwnedPet(petId, user.getId());
 
         return PetResponseDto.Detail.from(pet);
     }
@@ -102,6 +98,66 @@ public class PetService {
     }
 
     /**
+     * 로그인 회원이 소유한 반려동물 정보 수정
+     *
+     * @param email 로그인 회원 이메일
+     * @param petId 수정할 반려동물 ID
+     * @param request 반려동물 정보 수정 요청
+     * @return 수정된 반려동물 상세 정보
+     */
+    @Transactional
+    public PetResponseDto.Detail updatePet(
+            final String email,
+            final Long petId,
+            final PetRequestDto.Update request
+    ) {
+        final User user = findActiveUser(email);
+        final Pet pet = findOwnedPet(petId, user.getId());
+        final ResolvedBreed resolvedBreed = resolveBreed(request);
+
+        pet.updateBasicInfo(
+                normalizeNullable(request.getName()),
+                request.getWeight(),
+                normalizeNullable(request.getSize())
+        );
+
+        if (resolvedBreed != null) {
+            pet.updateBreed(resolvedBreed.breed(), resolvedBreed.breedText());
+        }
+        if (request.getProfileImageUrl() != null) {
+            pet.updateProfileImage(normalizeNullable(request.getProfileImageUrl()));
+        }
+        if (request.getRegistrationNumber() != null) {
+            pet.updateRegistrationNumber(normalizeNullable(request.getRegistrationNumber()));
+        }
+        if (request.getVaccine() != null) {
+            pet.updateVaccine(normalizeNullable(request.getVaccine()));
+        }
+
+        return PetResponseDto.Detail.from(pet);
+    }
+
+    /**
+     * 로그인 회원이 소유한 반려동물을 대표 반려동물로 설정
+     *
+     * @param email 로그인 회원 이메일
+     * @param petId 대표로 설정할 반려동물 ID
+     */
+    @Transactional
+    public void setPrimaryPet(final String email, final Long petId) {
+        final User user = findActiveUser(email);
+        final Pet pet = findOwnedPet(petId, user.getId());
+
+        if (pet.isPrimary()) {
+            return;
+        }
+
+        petRepository.findByUserIdAndPrimaryTrue(user.getId()) // 기존 대표 반려동물 해제
+                .ifPresent(Pet::removePrimary);
+        pet.makePrimary();
+    }
+
+    /**
      * 활성 회원 조회
      *
      * @param email 로그인 회원 이메일
@@ -112,6 +168,21 @@ public class PetService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "회원을 찾을 수 없습니다."
+                ));
+    }
+
+    /**
+     * 로그인 회원이 소유한 반려동물 조회
+     *
+     * @param petId 조회할 반려동물 ID
+     * @param userId 로그인 회원 ID
+     * @return 로그인 회원이 소유한 반려동물 엔티티
+     */
+    private Pet findOwnedPet(final Long petId, final Long userId) {
+        return petRepository.findByIdAndUserId(petId, userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "반려동물을 찾을 수 없습니다."
                 ));
     }
 
@@ -146,11 +217,60 @@ public class PetService {
         }
 
         final Breed directInputBreed = breedRepository.findByName(DIRECT_INPUT_BREED_NAME)
-                .orElseGet(() -> breedRepository.save(Breed.builder()
-                        .name(DIRECT_INPUT_BREED_NAME)
-                        .dangerous(false)
-                        .build()));
+                .orElseGet(this::createDirectInputBreed);
         return new ResolvedBreed(directInputBreed, breedText);
+    }
+
+    /**
+     * 수정 요청의 견종 변경 정보 처리
+     *
+     * @param request 반려동물 정보 수정 요청
+     * @return 변경할 견종 정보 또는 견종 변경 요청이 없으면 null
+     */
+    private ResolvedBreed resolveBreed(final PetRequestDto.Update request) {
+        final Long breedId = request.getBreedId();
+        final String rawBreedText = request.getBreedText();
+
+        if (breedId == null && rawBreedText == null) {
+            return null;
+        }
+
+        final String breedText = normalizeNullable(rawBreedText);
+        if (breedId != null && breedText != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "견종 선택과 직접 입력은 동시에 사용할 수 없습니다."
+            );
+        }
+
+        if (breedId != null) {
+            final Breed breed = breedRepository.findById(breedId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "선택한 견종을 찾을 수 없습니다."
+                    ));
+            return new ResolvedBreed(breed, null);
+        }
+
+        if (breedText == null) {
+            return new ResolvedBreed(null, null);
+        }
+
+        final Breed directInputBreed = breedRepository.findByName(DIRECT_INPUT_BREED_NAME)
+                .orElseGet(this::createDirectInputBreed);
+        return new ResolvedBreed(directInputBreed, breedText);
+    }
+
+    /**
+     * 직접 입력 견종을 연결하기 위한 공통 견종 엔티티 생성
+     *
+     * @return 생성된 직접 입력 견종 엔티티
+     */
+    private Breed createDirectInputBreed() {
+        return breedRepository.save(Breed.builder()
+                .name(DIRECT_INPUT_BREED_NAME)
+                .dangerous(false)
+                .build());
     }
 
     /**

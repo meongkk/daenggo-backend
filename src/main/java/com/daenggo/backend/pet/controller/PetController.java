@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -82,5 +83,43 @@ public class PetController {
         return ResponseEntity
                 .created(URI.create("/api/pets/" + response.getPetId()))
                 .body(response);
+    }
+
+    /**
+     * 로그인 회원이 소유한 반려동물 정보 수정
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param petId 수정할 반려동물 ID
+     * @param request 반려동물 정보 수정 요청
+     * @return 수정된 반려동물 상세 정보 응답
+     */
+    @PatchMapping("/{petId}")
+    public ResponseEntity<PetResponseDto.Detail> updatePet(
+            final Authentication authentication,
+            @PathVariable final Long petId,
+            @Valid @RequestBody final PetRequestDto.Update request
+    ) {
+        final PetResponseDto.Detail response = petService.updatePet(
+                authentication.getName(),
+                petId,
+                request
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 로그인 회원이 소유한 반려동물을 대표 반려동물로 설정
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param petId 대표로 설정할 반려동물 ID
+     * @return 응답 본문 없는 성공 응답
+     */
+    @PatchMapping("/{petId}/primary")
+    public ResponseEntity<Void> setPrimaryPet(
+            final Authentication authentication,
+            @PathVariable final Long petId
+    ) {
+        petService.setPrimaryPet(authentication.getName(), petId);
+        return ResponseEntity.noContent().build();
     }
 }

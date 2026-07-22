@@ -2,6 +2,7 @@ package com.daenggo.backend.global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,37 +28,56 @@ public class SecurityConfig {
      * @throws Exception 보안 구성 실패
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            final HttpSecurity http,
+            @Value("${ALLOW_UNAUTHENTICATED_DEVELOPMENT_API:false}")
+            final boolean allowUnauthenticatedDevelopmentApi
+    ) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
-                        .requestMatchers(HttpMethod.POST,
-                                "/api/auth/signup",
-                                "/api/auth/login",
-                                "/api/auth/login/*",
-                                "/api/auth/reissue",
-                                "/api/auth/password/reset",
-                                "/api/auth/password/reset-request"
-                        ).permitAll()
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/auth/check-email",
-                                "/api/auth/check-nickname"
-                        ).permitAll()
-                        .requestMatchers(
-                                "/api/users/**",
-                                "/api/pets/**",
-                                "/api/groups/**",
-                                "/api/group-invitations/**",
+                .authorizeHttpRequests(authorize -> {
+                    authorize
+                            .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
+                            .requestMatchers(HttpMethod.POST,
+                                    "/api/auth/signup",
+                                    "/api/auth/login",
+                                    "/api/auth/login/*",
+                                    "/api/auth/reissue",
+                                    "/api/auth/password/reset",
+                                    "/api/auth/password/reset-request"
+                            ).permitAll()
+                            .requestMatchers(HttpMethod.GET,
+                                    "/api/auth/check-email",
+                                    "/api/auth/check-nickname"
+                            ).permitAll();
+
+                    // 로그인 프론트가 완성되기 전 로컬 Docker에서만 임시 사용자 API를 허용한다.
+                    if (allowUnauthenticatedDevelopmentApi) {
+                        authorize.requestMatchers(
                                 "/api/community/**",
-                                "/api/walks/**",
-                                "/api/favorites/**"
-                        ).authenticated()
-                        .anyRequest().permitAll())
+                                "/api/walks/**"
+                        ).permitAll();
+                    } else {
+                        authorize.requestMatchers(
+                                "/api/community/**",
+                                "/api/walks/**"
+                        ).authenticated();
+                    }
+
+                    authorize
+                            .requestMatchers(
+                                    "/api/users/**",
+                                    "/api/pets/**",
+                                    "/api/groups/**",
+                                    "/api/group-invitations/**",
+                                    "/api/favorites/**"
+                            ).authenticated()
+                            .anyRequest().permitAll();
+                })
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .cors(Customizer.withDefaults());

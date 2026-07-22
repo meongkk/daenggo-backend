@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -16,29 +15,21 @@ import java.util.Optional;
  */
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
 
-    Optional<RefreshToken> findByTokenHashAndRevokedAtIsNull(String tokenHash);
+    Optional<RefreshToken> findByToken(String token);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
-            select token
-              from RefreshToken token
-              join fetch token.user
-             where token.tokenHash = :tokenHash
-               and token.revokedAt is null
+            select refreshToken
+              from RefreshToken refreshToken
+              join fetch refreshToken.user
+             where refreshToken.token = :token
             """)
-    Optional<RefreshToken> findActiveByTokenHashForUpdate(
-            @Param("tokenHash") String tokenHash
-    );
+    Optional<RefreshToken> findByTokenForUpdate(@Param("token") String token);
 
     @Modifying
     @Query("""
-            update RefreshToken token
-               set token.revokedAt = :revokedAt
-             where token.user.id = :userId
-               and token.revokedAt is null
+            delete from RefreshToken refreshToken
+             where refreshToken.user.id = :userId
             """)
-    int revokeAllByUserId(
-            @Param("userId") Long userId,
-            @Param("revokedAt") Instant revokedAt
-    );
+    int deleteAllByUserId(@Param("userId") Long userId);
 }

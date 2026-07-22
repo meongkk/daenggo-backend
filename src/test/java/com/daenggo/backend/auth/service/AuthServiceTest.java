@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,9 +27,6 @@ import static org.mockito.Mockito.verify;
 class AuthServiceTest {
 
     private static final String EMAIL = "member@daenggo.com";
-    private static final Instant REFRESH_TOKEN_EXPIRES_AT =
-            Instant.parse("2026-08-04T00:00:00Z");
-
     @Mock
     private UserRepository userRepository;
 
@@ -111,10 +107,7 @@ class AuthServiceTest {
         given(accessTokenService.issue(user))
                 .willReturn(new AccessTokenService.IssuedAccessToken("access-token", 900));
         given(refreshTokenService.issue(user))
-                .willReturn(new RefreshTokenService.IssuedRefreshToken(
-                        "refresh-token",
-                        REFRESH_TOKEN_EXPIRES_AT
-                ));
+                .willReturn(new RefreshTokenService.IssuedRefreshToken("refresh-token"));
 
         final AuthResponseDto.Token response = authService.login(loginRequest);
 
@@ -154,8 +147,7 @@ class AuthServiceTest {
         given(refreshTokenService.rotate("old-refresh-token"))
                 .willReturn(new RefreshTokenService.RotatedRefreshToken(
                         user,
-                        "new-refresh-token",
-                        REFRESH_TOKEN_EXPIRES_AT
+                        "new-refresh-token"
                 ));
         given(accessTokenService.issue(user))
                 .willReturn(new AccessTokenService.IssuedAccessToken("new-access-token", 900));
@@ -164,7 +156,6 @@ class AuthServiceTest {
 
         assertThat(response.getAccessToken()).isEqualTo("new-access-token");
         assertThat(response.getRefreshToken()).isEqualTo("new-refresh-token");
-        assertThat(response.getRefreshTokenExpiresAt()).isEqualTo(REFRESH_TOKEN_EXPIRES_AT);
     }
 
     @Test

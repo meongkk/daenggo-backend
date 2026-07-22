@@ -10,5 +10,5 @@ import com.daenggo.backend.walk.entity.WalkRouteRecord;
 public interface WalkRouteRecordRepository extends JpaRepository<WalkRouteRecord, Long> {
 
 	// 경로 조회
-    List<WalkRouteRecord> findByWalkOrderBySequenceNoAsc(WalkRecord walkRecord);
+    List<WalkRouteRecord> findByWalkRecordOrderBySequenceNoAsc(WalkRecord walkRecord);
 }

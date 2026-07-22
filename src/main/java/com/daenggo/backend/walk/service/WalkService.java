@@ -169,7 +169,7 @@ public class WalkService {
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 
 		
-		List<Long> petIds = walkRecordPetRepository.findByWalk(walk)
+		List<Long> petIds = walkRecordPetRepository.findByWalkRecord(walk)
 				.stream()
 				.map(pet -> pet.getPet().getId())
 				.toList();
@@ -199,7 +199,7 @@ public class WalkService {
 		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
-		List<WalkRouteRecord> routeRecords = walkRouteRecordRepository.findByWalkOrderBySequenceNoAsc(walk);
+		List<WalkRouteRecord> routeRecords = walkRouteRecordRepository.findByWalkRecordOrderBySequenceNoAsc(walk);
 		
 		List<RoutePointResponse> routePoints = routeRecords.stream()
 				.map(route -> RoutePointResponse.builder()
@@ -231,7 +231,7 @@ public class WalkService {
 		
 		walk.update(request.getTitle(), request.getMemo());
 		
-		List<Long> petIds = walkRecordPetRepository.findByWalk(walk)
+		List<Long> petIds = walkRecordPetRepository.findByWalkRecord(walk)
 				.stream()
 				.map(pet -> pet.getPet().getId())
 				.toList();

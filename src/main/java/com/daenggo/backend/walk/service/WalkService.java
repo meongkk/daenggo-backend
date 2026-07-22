@@ -1,7 +1,6 @@
 package com.daenggo.backend.walk.service;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -9,11 +8,8 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,18 +17,18 @@ import com.daenggo.backend.pet.entity.Pet;
 import com.daenggo.backend.pet.repository.PetRepository;
 import com.daenggo.backend.user.entity.User;
 import com.daenggo.backend.user.repository.UserRepository;
-import com.daenggo.backend.walk.dto.WalkRequestDto.RoutePointRequest;
-import com.daenggo.backend.walk.dto.WalkRequestDto.WalkCompleteRequest;
-import com.daenggo.backend.walk.dto.WalkRequestDto.WalkPhotoUploadRequest;
-import com.daenggo.backend.walk.dto.WalkRequestDto.WalkRouteBatchRequest;
-import com.daenggo.backend.walk.dto.WalkRequestDto.WalkUpdateRequest;
-import com.daenggo.backend.walk.dto.WalkResponseDto.RoutePointResponse;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkCalendarResponse;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkCompleteResponse;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkDetailResponse;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkPhotoResponse;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkRouteResponse;
-import com.daenggo.backend.walk.dto.WalkResponseDto.WalkStartResponse;
+import com.daenggo.backend.walk.dto.WalkRequest.RoutePointRequest;
+import com.daenggo.backend.walk.dto.WalkRequest.WalkCompleteRequest;
+import com.daenggo.backend.walk.dto.WalkRequest.WalkPhotoUploadRequest;
+import com.daenggo.backend.walk.dto.WalkRequest.WalkRouteBatchRequest;
+import com.daenggo.backend.walk.dto.WalkRequest.WalkUpdateRequest;
+import com.daenggo.backend.walk.dto.WalkResponse.RoutePointResponse;
+import com.daenggo.backend.walk.dto.WalkResponse.WalkCalendarResponse;
+import com.daenggo.backend.walk.dto.WalkResponse.WalkCompleteResponse;
+import com.daenggo.backend.walk.dto.WalkResponse.WalkDetailResponse;
+import com.daenggo.backend.walk.dto.WalkResponse.WalkPhotoResponse;
+import com.daenggo.backend.walk.dto.WalkResponse.WalkRouteResponse;
+import com.daenggo.backend.walk.dto.WalkResponse.WalkStartResponse;
 import com.daenggo.backend.walk.entity.WalkPhoto;
 import com.daenggo.backend.walk.entity.WalkRecord;
 import com.daenggo.backend.walk.entity.WalkRecordPet;
@@ -109,15 +105,21 @@ public class WalkService {
 		        .orElseThrow(() -> new IllegalArgumentException("산책이 없습니다."));
 		
 		
+		
 		// 산책 시간 계산(단위 : sec)
+		LocalDateTime endedAt = LocalDateTime.now();
+		
+		
 		int durationSec = (int) Duration.between(
 	            walk.getStartedAt(),
-	            walk.getEndedAt()
+	            endedAt
 	    ).getSeconds();
 		
 		// 평균 페이스 계산 (단위 : sec)
 		int avgPaceSec = 0;
-		if (durationSec > 0) {
+		if (request.getDistanceM() != null 
+				&& request.getDistanceM().doubleValue() > 0) {
+			
 	        avgPaceSec =
 	        		(int) (durationSec / (request.getDistanceM().doubleValue() / 1000.0));
 	    }
@@ -169,7 +171,7 @@ public class WalkService {
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 
 		
-		List<Long> petIds = walkRecordPetRepository.findByWalk(walk)
+		List<Long> petIds = walkRecordPetRepository.findByWalkRecord(walk)
 				.stream()
 				.map(pet -> pet.getPet().getId())
 				.toList();
@@ -199,7 +201,7 @@ public class WalkService {
 		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
-		List<WalkRouteRecord> routeRecords = walkRouteRecordRepository.findByWalkOrderBySequenceNoAsc(walk);
+		List<WalkRouteRecord> routeRecords = walkRouteRecordRepository.findByWalkRecordOrderBySequenceNoAsc(walk);
 		
 		List<RoutePointResponse> routePoints = routeRecords.stream()
 				.map(route -> RoutePointResponse.builder()
@@ -231,7 +233,7 @@ public class WalkService {
 		
 		walk.update(request.getTitle(), request.getMemo());
 		
-		List<Long> petIds = walkRecordPetRepository.findByWalk(walk)
+		List<Long> petIds = walkRecordPetRepository.findByWalkRecord(walk)
 				.stream()
 				.map(pet -> pet.getPet().getId())
 				.toList();
@@ -253,6 +255,7 @@ public class WalkService {
 	/**
      * 산책 기록 삭제
      */
+	@Transactional
 	public void deleteWalk(Long userId, Long walkId) {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
@@ -304,7 +307,10 @@ public class WalkService {
 
 
 	    // 파일 저장
-	    String originalFilename = image.getOriginalFilename();
+	    String originalFilename =
+	            image.getOriginalFilename() != null 
+	            ? image.getOriginalFilename()
+	            : "image";
 
 	    String fileName = UUID.randomUUID() 
 	            + "_" 
@@ -371,10 +377,24 @@ public class WalkService {
 	        throw new IllegalArgumentException("삭제 권한이 없습니다.");
 	    }
 
-	    // TODO: S3 이미지 삭제 추가
-	    // imageService.delete(photo.getImageUrl());
-
+	    deleteImageFile(photo.getImageUrl());
 	    walkPhotoRepository.delete(photo);
 	}
+	
+	/**
+	 * 로컬 저장 이미지 삭제
+	 */
+	private void deleteImageFile(String imageUrl) {
+
+	    try {
+	        Path filePath = Paths.get("." + imageUrl);
+
+	        Files.deleteIfExists(filePath);
+
+	    } catch (IOException e) {
+	        throw new RuntimeException("이미지 파일 삭제 실패", e);
+	    }
+	}
+	
 	
 }

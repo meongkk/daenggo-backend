@@ -15,22 +15,15 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenServiceTest {
-
-    private static final Instant NOW = Instant.parse("2026-07-21T00:00:00Z");
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
@@ -41,14 +34,12 @@ class RefreshTokenServiceTest {
     void setUp() {
         refreshTokenService = new RefreshTokenService(
                 refreshTokenRepository,
-                new SecureRandom(),
-                Clock.fixed(NOW, ZoneOffset.UTC),
-                14
+                new SecureRandom()
         );
     }
 
     @Test
-    void issueStoresOnlyTokenHash() {
+    void issueStoresIssuedToken() {
         final User user = createUser(1L);
         final ArgumentCaptor<RefreshToken> tokenCaptor =
                 ArgumentCaptor.forClass(RefreshToken.class);
@@ -59,20 +50,15 @@ class RefreshTokenServiceTest {
         verify(refreshTokenRepository).save(tokenCaptor.capture());
         final RefreshToken savedToken = tokenCaptor.getValue();
         assertThat(issued.value()).hasSize(43);
-        assertThat(savedToken.getTokenHash()).hasSize(64);
-        assertThat(savedToken.getTokenHash()).isNotEqualTo(issued.value());
-        assertThat(issued.expiresAt()).isEqualTo(NOW.plus(14, ChronoUnit.DAYS));
+        assertThat(savedToken.getToken()).isEqualTo(issued.value());
+        assertThat(savedToken.getUser()).isSameAs(user);
     }
 
     @Test
-    void rotateReplacesStoredHashAndReturnsNewToken() {
+    void rotateReplacesStoredTokenAndReturnsNewToken() {
         final User user = createUser(1L);
-        final RefreshToken storedToken = RefreshToken.issue(
-                user,
-                "old-hash",
-                NOW.plus(1, ChronoUnit.DAYS)
-        );
-        given(refreshTokenRepository.findActiveByTokenHashForUpdate(anyString()))
+        final RefreshToken storedToken = RefreshToken.issue(user, "old-refresh-token");
+        given(refreshTokenRepository.findByTokenForUpdate("old-refresh-token"))
                 .willReturn(Optional.of(storedToken));
 
         final RefreshTokenService.RotatedRefreshToken rotated =
@@ -80,22 +66,19 @@ class RefreshTokenServiceTest {
 
         assertThat(rotated.user()).isSameAs(user);
         assertThat(rotated.value()).hasSize(43);
-        assertThat(storedToken.getTokenHash()).hasSize(64);
-        assertThat(storedToken.getTokenHash()).isNotEqualTo("old-hash");
-        assertThat(storedToken.getExpiresAt()).isEqualTo(NOW.plus(14, ChronoUnit.DAYS));
+        assertThat(rotated.value()).isNotEqualTo("old-refresh-token");
+        assertThat(storedToken.getToken()).isEqualTo(rotated.value());
     }
 
     @Test
-    void rotateRejectsExpiredToken() {
-        final RefreshToken storedToken = RefreshToken.issue(
-                createUser(1L),
-                "old-hash",
-                NOW.minusSeconds(1)
-        );
-        given(refreshTokenRepository.findActiveByTokenHashForUpdate(anyString()))
+    void rotateRejectsWithdrawnUsersToken() {
+        final User user = createUser(1L);
+        user.withdraw();
+        final RefreshToken storedToken = RefreshToken.issue(user, "refresh-token");
+        given(refreshTokenRepository.findByTokenForUpdate("refresh-token"))
                 .willReturn(Optional.of(storedToken));
 
-        assertThatThrownBy(() -> refreshTokenService.rotate("expired-refresh-token"))
+        assertThatThrownBy(() -> refreshTokenService.rotate("refresh-token"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(exception -> assertThat(
                         ((ResponseStatusException) exception).getStatusCode()
@@ -107,10 +90,9 @@ class RefreshTokenServiceTest {
         final User requester = createUser(1L);
         final RefreshToken storedToken = RefreshToken.issue(
                 createUser(2L),
-                "stored-hash",
-                NOW.plus(1, ChronoUnit.DAYS)
+                "another-users-token"
         );
-        given(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(anyString()))
+        given(refreshTokenRepository.findByToken("another-users-token"))
                 .willReturn(Optional.of(storedToken));
 
         assertThatThrownBy(() -> refreshTokenService.revokeOwnedToken(
@@ -124,10 +106,22 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void revokeAllDelegatesWithCurrentTime() {
+    void revokeOwnedTokenDeletesOwnedToken() {
+        final User user = createUser(1L);
+        final RefreshToken storedToken = RefreshToken.issue(user, "refresh-token");
+        given(refreshTokenRepository.findByToken("refresh-token"))
+                .willReturn(Optional.of(storedToken));
+
+        refreshTokenService.revokeOwnedToken(user, "refresh-token");
+
+        verify(refreshTokenRepository).delete(storedToken);
+    }
+
+    @Test
+    void revokeAllDeletesUsersTokens() {
         refreshTokenService.revokeAll(7L);
 
-        verify(refreshTokenRepository).revokeAllByUserId(7L, NOW);
+        verify(refreshTokenRepository).deleteAllByUserId(7L);
     }
 
     private User createUser(final Long id) {

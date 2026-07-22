@@ -127,8 +127,7 @@ public class AuthService {
                 TOKEN_TYPE,
                 accessToken.value(),
                 accessToken.expiresIn(),
-                refreshToken.value(),
-                refreshToken.expiresAt()
+                refreshToken.value()
         );
     }
 
@@ -156,8 +155,7 @@ public class AuthService {
                 TOKEN_TYPE,
                 accessToken.value(),
                 accessToken.expiresIn(),
-                refreshToken.value(),
-                refreshToken.expiresAt()
+                refreshToken.value()
         );
     }
 

@@ -6,8 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
-
 /**
  * 인증 응답 데이터 모음
  */
@@ -57,6 +55,5 @@ public final class AuthResponseDto {
         private final String accessToken;
         private final long accessTokenExpiresIn;
         private final String refreshToken;
-        private final Instant refreshTokenExpiresAt;
     }
 }

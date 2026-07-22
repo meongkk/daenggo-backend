@@ -8,7 +8,7 @@ public enum CommunityCategory {
     /** 자유 게시판. */
     FREE,
 
-    /** 중고 장터 게시판. */
+    /** 장터 게시판. */
     MARKET,
 
     /** 펫시터 게시판. */

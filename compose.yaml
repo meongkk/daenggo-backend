@@ -44,6 +44,8 @@ services:
       DB_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-daenggo}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
       DB_USERNAME: "${MYSQL_USER:-daenggo}"
       DB_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD를 .env에 설정하세요}"
+    volumes:
+      - community-uploads:/app/uploads
 
   frontend:
     build:
@@ -78,3 +80,5 @@ services:
 volumes:
   mysql-data:
     name: daenggo-mysql-data-rootonly
+  community-uploads:
+    name: daenggo-community-uploads

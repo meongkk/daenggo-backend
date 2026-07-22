@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class walkRouteRecord {
+public class WalkRouteRecord {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,16 +34,12 @@ public class walkRouteRecord {
 	private WalkRecord walkRecord;
 	
 	@Column(name="sequence_no", nullable = false)
-	private Long sequenceNo;
+	private Integer sequenceNo;
 	
 	@Column(precision=10, scale=7, nullable = false)
 	private BigDecimal latitude;
 	
 	@Column(precision=11, scale=7, nullable = false)
 	private BigDecimal longitude;
-	
-	@Column(name="altitude_m", precision=8, scale=2, nullable = false)
-	private BigDecimal altitudeM;
-	
 	
 }

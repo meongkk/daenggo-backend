@@ -6,6 +6,7 @@ import com.daenggo.backend.board.entity.Board;
 import com.daenggo.backend.board.entity.BoardImage;
 import com.daenggo.backend.board.repository.BoardImageRepository;
 import com.daenggo.backend.board.repository.BoardRepository;
+import com.daenggo.backend.board.repository.CommentRepository;
 import com.daenggo.backend.user.entity.User;
 import jakarta.persistence.EntityManager;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,9 @@ public class CommunityPostService {
     /** 게시글과 업로드 이미지를 연결해 저장하는 저장소. */
     private final BoardImageRepository boardImageRepository;
 
+    /** 게시글별 실제 댓글 개수를 조회하는 저장소. */
+    private final CommentRepository commentRepository;
+
     /** 작성자 엔티티 조회에 사용하는 엔티티 매니저. */
     private final EntityManager entityManager;
 
@@ -48,10 +52,12 @@ public class CommunityPostService {
     public CommunityPostService(
             BoardRepository boardRepository,
             BoardImageRepository boardImageRepository,
+            CommentRepository commentRepository,
             EntityManager entityManager
     ) {
         this.boardRepository = boardRepository;
         this.boardImageRepository = boardImageRepository;
+        this.commentRepository = commentRepository;
         this.entityManager = entityManager;
     }
 
@@ -83,10 +89,19 @@ public class CommunityPostService {
                         Collectors.mapping(BoardImage::getImageUrl, Collectors.toList())
                 ));
 
+        Map<Long, Long> commentCountByBoardId = commentRepository
+                .countAllByBoardIds(boardIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        CommentRepository.BoardCommentCount::getBoardId,
+                        CommentRepository.BoardCommentCount::getCommentCount
+                ));
+
         return boards.stream()
                 .map(board -> BoardResponse.from(
                         board,
-                        imageUrlsByBoardId.getOrDefault(board.getId(), List.of())
+                        imageUrlsByBoardId.getOrDefault(board.getId(), List.of()),
+                        commentCountByBoardId.getOrDefault(board.getId(), 0L)
                 ))
                 .toList();
     }
@@ -116,7 +131,9 @@ public class CommunityPostService {
                 .map(BoardImage::getImageUrl)
                 .toList();
 
-        return BoardResponse.from(board, imageUrls);
+        long commentCount = commentRepository.countByBoard_Id(postId);
+
+        return BoardResponse.from(board, imageUrls, commentCount);
     }
 
     /**

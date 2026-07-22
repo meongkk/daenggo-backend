@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-public class WalkResponseDto {
+public class WalkResponse {
 
     @Getter
     @Builder

@@ -1,7 +1,9 @@
 package com.daenggo.backend.place.dto;
 
-import com.daenggo.backend.place.entity.PlaceReport;
 import java.time.LocalDateTime;
+
+import com.daenggo.backend.place.entity.PlaceReport;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 public record PlaceReportResponse(
         Long reportId,
@@ -10,6 +12,7 @@ public record PlaceReportResponse(
         String reportType,
         String content,
         String status,
+        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime createdAt
 ) {
     public static PlaceReportResponse from(PlaceReport report) {

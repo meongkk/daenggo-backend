@@ -105,15 +105,21 @@ public class WalkService {
 		        .orElseThrow(() -> new IllegalArgumentException("산책이 없습니다."));
 		
 		
+		
 		// 산책 시간 계산(단위 : sec)
+		LocalDateTime endedAt = LocalDateTime.now();
+		
+		
 		int durationSec = (int) Duration.between(
 	            walk.getStartedAt(),
-	            walk.getEndedAt()
+	            endedAt
 	    ).getSeconds();
 		
 		// 평균 페이스 계산 (단위 : sec)
 		int avgPaceSec = 0;
-		if (durationSec > 0) {
+		if (request.getDistanceM() != null 
+				&& request.getDistanceM().doubleValue() > 0) {
+			
 	        avgPaceSec =
 	        		(int) (durationSec / (request.getDistanceM().doubleValue() / 1000.0));
 	    }
@@ -249,6 +255,7 @@ public class WalkService {
 	/**
      * 산책 기록 삭제
      */
+	@Transactional
 	public void deleteWalk(Long userId, Long walkId) {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));

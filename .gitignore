@@ -39,3 +39,6 @@ build/
 application-local.yml
 
 src/main/resources/application-local.properties
+
+# Local image uploads
+/uploads/

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.daenggo.backend.place.dto.PlaceDetailResponse;
 import com.daenggo.backend.place.dto.PlaceNearbyResponse;
 import com.daenggo.backend.place.dto.PlaceSearchCondition;
+import com.daenggo.backend.place.dto.RegionCountResponse;
 import com.daenggo.backend.place.service.PlaceService;
 
 import lombok.RequiredArgsConstructor;
@@ -63,5 +64,22 @@ public class PlaceController {
 
         return placeService.searchForPet(
                 swLat, swLng, neLat, neLng, petId, category, indoorAllowedOnly);
+    }
+    
+    /** 지역별 장소 조회 */
+    @GetMapping("/regions")
+    public Page<PlaceNearbyResponse> findByRegion(
+            @RequestParam String region,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        return placeService.findByRegion(region, category, page, size);
+    }
+    
+    /** 지역 목록 조회 (장소 개수 포함) */
+    @GetMapping("/regions/list")
+    public List<RegionCountResponse> getRegions() {
+        return placeService.getRegions();
     }
 }

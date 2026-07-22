@@ -14,6 +14,7 @@ import com.daenggo.backend.pet.repository.PetRepository;
 import com.daenggo.backend.place.dto.PlaceDetailResponse;
 import com.daenggo.backend.place.dto.PlaceNearbyResponse;
 import com.daenggo.backend.place.dto.PlaceSearchCondition;
+import com.daenggo.backend.place.dto.RegionCountResponse;
 import com.daenggo.backend.place.entity.Place;
 import com.daenggo.backend.place.entity.PlaceCondition;
 import com.daenggo.backend.place.repository.PlaceConditionRepository;
@@ -100,6 +101,34 @@ public class PlaceService {
 
         return places.stream()
                 .map(PlaceNearbyResponse::from)
+                .toList();
+    }
+    
+    /**
+     * 지역별 장소 조회
+     *
+     * 주소가 해당 지역으로 시작하는 장소를 반환한다.
+     * 예) "서울" → 서울특별시 소재 장소
+     */
+    public Page<PlaceNearbyResponse> findByRegion(
+            String region, String category, int page, int size) {
+
+        if (region == null || region.isBlank()) {
+            return Page.empty();
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return placeRepository.findByRegion(region.trim(), category, pageable)
+                .map(PlaceNearbyResponse::from);
+    }
+    
+    /** 데이터가 존재하는 지역 목록 조회 (장소 개수 많은 순) */
+    public List<RegionCountResponse> getRegions() {
+        return placeRepository.findRegionCounts().stream()
+                .map(row -> new RegionCountResponse(
+                        (String) row[0],
+                        ((Number) row[1]).longValue()))
                 .toList();
     }
 }

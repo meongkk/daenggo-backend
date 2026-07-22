@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 
+/**
+ * 반려동물 정보 관리 REST 컨트롤러
+ */
 @SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequiredArgsConstructor
@@ -25,6 +28,12 @@ public class PetController {
 
     private final PetService petService;
 
+    /**
+     * 로그인 회원의 반려동물 목록 조회
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @return 로그인 회원의 반려동물 목록 응답
+     */
     @GetMapping
     public ResponseEntity<List<PetResponseDto.Summary>> getMyPets(
             final Authentication authentication
@@ -34,6 +43,13 @@ public class PetController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 로그인 회원의 반려동물 등록
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param request 반려동물 등록 요청
+     * @return 등록된 반려동물 상세 정보 응답
+     */
     @PostMapping
     public ResponseEntity<PetResponseDto.Detail> createPet(
             final Authentication authentication,

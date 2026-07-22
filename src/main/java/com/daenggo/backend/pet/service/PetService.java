@@ -16,6 +16,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+/**
+ * 반려동물 정보 관리 비즈니스 로직
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -27,6 +30,12 @@ public class PetService {
     private final BreedRepository breedRepository;
     private final UserRepository userRepository;
 
+    /**
+     * 로그인 회원의 반려동물 목록 조회
+     *
+     * @param email 로그인 회원 이메일
+     * @return 로그인 회원의 반려동물 목록
+     */
     public List<PetResponseDto.Summary> getMyPets(final String email) {
         final User user = userRepository.findByEmailAndDeletedAtIsNull(email)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -40,6 +49,13 @@ public class PetService {
                 .toList();
     }
 
+    /**
+     * 로그인 회원의 반려동물 등록
+     *
+     * @param email 로그인 회원 이메일
+     * @param request 반려동물 등록 요청
+     * @return 등록된 반려동물 상세 정보
+     */
     @Transactional
     public PetResponseDto.Detail createPet(
             final String email,
@@ -75,6 +91,12 @@ public class PetService {
         return PetResponseDto.Detail.from(savedPet);
     }
 
+    /**
+     * 등록 요청의 견종 선택 또는 직접 입력 정보 처리
+     *
+     * @param request 반려동물 등록 요청
+     * @return 저장할 견종 엔티티와 직접 입력 견종명
+     */
     private ResolvedBreed resolveBreed(final PetRequestDto.Create request) {
         final Long breedId = request.getBreedId();
         final String breedText = normalizeNullable(request.getBreedText());
@@ -107,6 +129,12 @@ public class PetService {
         return new ResolvedBreed(directInputBreed, breedText);
     }
 
+    /**
+     * 선택 입력 문자열의 앞뒤 공백 제거 및 빈 문자열 정규화
+     *
+     * @param value 정규화할 문자열
+     * @return 공백을 제거한 문자열 또는 값이 없으면 null
+     */
     private String normalizeNullable(final String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -114,6 +142,12 @@ public class PetService {
         return value.trim();
     }
 
+    /**
+     * 반려동물 등록에 사용할 견종 처리 결과
+     *
+     * @param breed 저장할 견종 엔티티
+     * @param breedText 직접 입력한 견종명
+     */
     private record ResolvedBreed(Breed breed, String breedText) {
     }
 }

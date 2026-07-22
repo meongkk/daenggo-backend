@@ -3,6 +3,7 @@ package com.daenggo.backend.user.controller;
 import com.daenggo.backend.user.dto.UserRequestDto;
 import com.daenggo.backend.user.dto.UserResponseDto;
 import com.daenggo.backend.user.service.UserService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 회원 정보 관리 REST 컨트롤러
  */
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")

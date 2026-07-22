@@ -16,5 +16,6 @@ public record PlaceSearchCondition(
         String category,
         Boolean indoorAllowedOnly,
         BigDecimal petWeight,
+        String petSize,
         Boolean isDangerous
 ) {}

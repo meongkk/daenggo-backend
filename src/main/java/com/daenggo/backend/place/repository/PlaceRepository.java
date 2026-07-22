@@ -33,6 +33,7 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
           AND (:category IS NULL OR p.category = :category)
           AND (:indoorAllowedOnly = false OR c.indoorStatus = 'ALLOWED')
           AND (:petWeight IS NULL OR c.maxWeight IS NULL OR c.maxWeight >= :petWeight)
+          AND (:petSize IS NULL OR c.allowedSize IS NULL OR c.allowedSize = :petSize)
           AND (:isDangerous = false OR c.dangerousAllowed <> 'DENIED')
           AND (c.indoorStatus IS NULL OR c.indoorStatus <> 'DENIED')
         """)
@@ -44,6 +45,7 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
             @Param("category") String category,
             @Param("indoorAllowedOnly") boolean indoorAllowedOnly,
             @Param("petWeight") BigDecimal petWeight,
+            @Param("petSize") String petSize,
             @Param("isDangerous") boolean isDangerous);
     
     /** 키워드로 장소명 또는 주소 검색 (페이징) */

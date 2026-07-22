@@ -1,5 +1,6 @@
 package com.daenggo.backend.place.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -8,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.daenggo.backend.pet.entity.Pet;
+import com.daenggo.backend.pet.repository.PetRepository;
 import com.daenggo.backend.place.dto.PlaceDetailResponse;
 import com.daenggo.backend.place.dto.PlaceNearbyResponse;
 import com.daenggo.backend.place.dto.PlaceSearchCondition;
@@ -25,6 +28,7 @@ public class PlaceService {
 
     private final PlaceRepository placeRepository;
     private final PlaceConditionRepository conditionRepository;
+    private final PetRepository petRepository;
 
     /** 장소 상세 조회 (반려동물 출입 조건 포함, 조건이 없으면 null) */
     public PlaceDetailResponse findDetail(Long placeId) {
@@ -49,6 +53,7 @@ public class PlaceService {
                 cond.category(),
                 Boolean.TRUE.equals(cond.indoorAllowedOnly()),
                 cond.petWeight(),
+                cond.petSize(),
                 Boolean.TRUE.equals(cond.isDangerous()));
 
         return places.stream()
@@ -67,5 +72,34 @@ public class PlaceService {
 
         return placeRepository.searchByKeyword(keyword.trim(), pageable)
                 .map(PlaceNearbyResponse::from);
+    }
+    
+    /**
+     * 등록된 반려동물 정보를 기준으로 장소 검색
+     *
+     * 반려동물의 무게, 크기, 견종(맹견 여부)을 조건으로 자동 적용한다.
+     */
+    public List<PlaceNearbyResponse> searchForPet(
+            BigDecimal swLat, BigDecimal swLng,
+            BigDecimal neLat, BigDecimal neLng,
+            Long petId, String category, Boolean indoorAllowedOnly) {
+
+        Pet pet = petRepository.findById(petId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "반려동물을 찾을 수 없습니다. petId=" + petId));
+
+        boolean dangerous = pet.getBreed() != null && pet.getBreed().isDangerous();
+
+        List<Place> places = placeRepository.searchByCondition(
+                swLat, neLat, swLng, neLng,
+                category,
+                Boolean.TRUE.equals(indoorAllowedOnly),
+                pet.getWeight(),
+                pet.getSize(),
+                dangerous);
+
+        return places.stream()
+                .map(PlaceNearbyResponse::from)
+                .toList();
     }
 }

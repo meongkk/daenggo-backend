@@ -37,16 +37,30 @@ public class PetService {
      * @return 로그인 회원의 반려동물 목록
      */
     public List<PetResponseDto.Summary> getMyPets(final String email) {
-        final User user = userRepository.findByEmailAndDeletedAtIsNull(email)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "회원을 찾을 수 없습니다."
-                ));
+        final User user = findActiveUser(email);
 
         return petRepository.findAllByUserId(user.getId())
                 .stream()
                 .map(PetResponseDto.Summary::from)
                 .toList();
+    }
+
+    /**
+     * 로그인 회원이 소유한 반려동물 상세 조회
+     *
+     * @param email 로그인 회원 이메일
+     * @param petId 조회할 반려동물 ID
+     * @return 반려동물 상세 정보
+     */
+    public PetResponseDto.Detail getMyPet(final String email, final Long petId) {
+        final User user = findActiveUser(email);
+        final Pet pet = petRepository.findByIdAndUserId(petId, user.getId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "반려동물을 찾을 수 없습니다."
+                ));
+
+        return PetResponseDto.Detail.from(pet);
     }
 
     /**
@@ -61,11 +75,7 @@ public class PetService {
             final String email,
             final PetRequestDto.Create request
     ) {
-        final User user = userRepository.findByEmailAndDeletedAtIsNull(email)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "회원을 찾을 수 없습니다."
-                ));
+        final User user = findActiveUser(email);
         final ResolvedBreed resolvedBreed = resolveBreed(request);
         final boolean primary = Boolean.TRUE.equals(request.getPrimary());
 
@@ -89,6 +99,20 @@ public class PetService {
         final Pet savedPet = petRepository.saveAndFlush(pet);
 
         return PetResponseDto.Detail.from(savedPet);
+    }
+
+    /**
+     * 활성 회원 조회
+     *
+     * @param email 로그인 회원 이메일
+     * @return 활성 회원 엔티티
+     */
+    private User findActiveUser(final String email) {
+        return userRepository.findByEmailAndDeletedAtIsNull(email)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "회원을 찾을 수 없습니다."
+                ));
     }
 
     /**

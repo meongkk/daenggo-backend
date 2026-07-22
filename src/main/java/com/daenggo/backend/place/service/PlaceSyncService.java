@@ -164,4 +164,23 @@ public class PlaceSyncService {
 
         return true;
     }
+    
+    /**
+     * 저장된 rawText로 출입 조건을 다시 파싱한다 (API 호출 없음)
+     *
+     * @return 재파싱된 건수
+     */
+    @Transactional
+    public int reparseConditions() {
+        List<PlaceCondition> all = conditionRepository.findAll();
+        int count = 0;
+        for (PlaceCondition c : all) {
+            if (c.getRawText() != null && !c.getRawText().isBlank()) {
+                conditionConverter.reparse(c);
+                count++;
+            }
+        }
+        log.info("출입 조건 재파싱: {}건", count);
+        return count;
+    }
 }

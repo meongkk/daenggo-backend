@@ -1,5 +1,7 @@
 package com.daenggo.backend.walk.entity;
 
+import com.daenggo.backend.pet.entity.Pet;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -27,9 +29,9 @@ public class WalkRecordPet {
 	@Column(name="walk_record_pet_id")
 	private Long walkRecordPetId;
 	
-//	@ManyToOne(fetch = FetchType.LAZY)
-//	@JoinColumn(name="pet_id", nullable = false)
-//	private Pet pet; 						  					// 아직 entity가 없어 오류 발생 -> 주석 처리
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name="pet_id", nullable = false)
+	private Pet pet;
 	
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name="walk_record_id", nullable = false)

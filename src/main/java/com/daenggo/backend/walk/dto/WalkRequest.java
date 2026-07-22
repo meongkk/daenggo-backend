@@ -55,6 +55,7 @@ public class WalkRequest {
     }
 
     @Getter
+    @Setter
     public static class WalkPhotoUploadRequest {   // 사진 등록
 
         private MultipartFile image;
@@ -64,9 +65,13 @@ public class WalkRequest {
         private BigDecimal latitude;
 
         private BigDecimal longitude;
-
-        private Long placeId;
         
     	private LocalDateTime takenAt;
+        
+        public void setTakenAt(String takenAt) {
+            this.takenAt = OffsetDateTime
+                    .parse(takenAt)
+                    .toLocalDateTime();
+        }
     }
 }

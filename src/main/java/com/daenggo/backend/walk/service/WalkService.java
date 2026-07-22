@@ -307,7 +307,10 @@ public class WalkService {
 
 
 	    // 파일 저장
-	    String originalFilename = image.getOriginalFilename();
+	    String originalFilename =
+	            image.getOriginalFilename() != null 
+	            ? image.getOriginalFilename()
+	            : "image";
 
 	    String fileName = UUID.randomUUID() 
 	            + "_" 
@@ -374,10 +377,24 @@ public class WalkService {
 	        throw new IllegalArgumentException("삭제 권한이 없습니다.");
 	    }
 
-	    // TODO: S3 이미지 삭제 추가
-	    // imageService.delete(photo.getImageUrl());
-
+	    deleteImageFile(photo.getImageUrl());
 	    walkPhotoRepository.delete(photo);
 	}
+	
+	/**
+	 * 로컬 저장 이미지 삭제
+	 */
+	private void deleteImageFile(String imageUrl) {
+
+	    try {
+	        Path filePath = Paths.get("." + imageUrl);
+
+	        Files.deleteIfExists(filePath);
+
+	    } catch (IOException e) {
+	        throw new RuntimeException("이미지 파일 삭제 실패", e);
+	    }
+	}
+	
 	
 }

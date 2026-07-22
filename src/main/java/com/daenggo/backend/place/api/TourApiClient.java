@@ -11,8 +11,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * 한국관광공사 반려동물 동반여행 API 호출 클라이언트
@@ -118,6 +118,43 @@ public class TourApiClient {
 
         } catch (Exception e) {
             log.warn("반려동물 상세 조회 실패 contentId={}", contentId, e);
+            return null;
+        }
+    }
+    
+    /**
+     * 장소 소개 정보 조회 (detailIntro2)
+     *
+     * 응답 필드명이 contentTypeId마다 다르므로 JsonNode로 직접 다룬다.
+     * 정보가 없으면 null을 반환한다.
+     */
+    public JsonNode getIntroDetail(String contentId, String contentTypeId) {
+
+        URI uri = UriComponentsBuilder
+                .fromUriString(baseUrl + "/detailIntro2")
+                .queryParam("serviceKey", serviceKey)
+                .queryParam("MobileOS", "ETC")
+                .queryParam("MobileApp", "daenggo")
+                .queryParam("contentId", contentId)
+                .queryParam("contentTypeId", contentTypeId)
+                .queryParam("_type", "json")
+                .build(true)
+                .toUri();
+
+        try {
+            String json = restClient.get().uri(uri).retrieve().body(String.class);
+            JsonNode items = objectMapper.readTree(json)
+                    .path("response").path("body").path("items");
+
+            if (!items.isObject()) return null;
+
+            JsonNode item = items.path("item");
+            if (!item.isArray() || item.isEmpty()) return null;
+
+            return item.get(0);
+
+        } catch (Exception e) {
+            log.warn("소개 정보 조회 실패 contentId={}", contentId, e);
             return null;
         }
     }

@@ -39,6 +39,9 @@ public class Pet {
     @JoinColumn(name = "breed_id", nullable = false)
     private Breed breed;
 
+    @Column(name = "is_primary", nullable = false)
+    private boolean primary;
+
     @Column(name = "pet_name", nullable = false, length = 50)
     private String name;
 
@@ -72,6 +75,7 @@ public class Pet {
     private Pet(
             User user,
             Breed breed,
+            boolean primary,
             String name,
             BigDecimal weight,
             String size,
@@ -82,6 +86,7 @@ public class Pet {
     ) {
         this.user = user;
         this.breed = breed;
+        this.primary = primary;
         this.name = name;
         this.weight = weight;
         this.size = size;
@@ -89,5 +94,13 @@ public class Pet {
         this.registrationNumber = registrationNumber;
         this.vaccine = vaccine;
         this.breedText = breedText;
+    }
+
+    public void makePrimary() {
+        this.primary = true;
+    }
+
+    public void removePrimary() {
+        this.primary = false;
     }
 }

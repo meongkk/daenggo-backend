@@ -23,14 +23,14 @@ public final class PetResponseDto {
         private final String profileImageUrl;
         private final boolean primary;
 
-        public static Summary from(final Pet pet, final boolean primary) {
+        public static Summary from(final Pet pet) {
             return new Summary(
                     pet.getId(),
                     pet.getName(),
                     pet.getBreed().getName(),
                     pet.getSize(),
                     pet.getImage(),
-                    primary
+                    pet.isPrimary()
             );
         }
     }
@@ -52,7 +52,7 @@ public final class PetResponseDto {
         private final boolean primary;
         private final LocalDateTime createdAt;
 
-        public static Detail from(final Pet pet, final boolean primary) {
+        public static Detail from(final Pet pet) {
             return new Detail(
                     pet.getId(),
                     pet.getName(),
@@ -64,7 +64,7 @@ public final class PetResponseDto {
                     pet.getImage(),
                     pet.getRegistrationNumber(),
                     pet.getVaccine(),
-                    primary,
+                    pet.isPrimary(),
                     pet.getCreatedAt()
             );
         }

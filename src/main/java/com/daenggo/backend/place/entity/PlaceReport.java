@@ -15,9 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.AccessLevel;
 import java.time.LocalDateTime;
-
-// User 파일 추가 필요
-//import com.daenggo.backend.user.entity.User;
+import com.daenggo.backend.user.entity.User;
 
 @Entity
 @Table(name = "place_report")
@@ -35,14 +33,9 @@ public class PlaceReport {
     @JoinColumn(name = "place_id", nullable = false)
     private Place place;                      
 
-// User 파일 추가 필요
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "user_id", nullable = false)
-//    private User user;
-    
- // 임시: User 엔티티 병합 후 위에걸로 교체
-    @Column(name = "user_id", nullable = false)
-    private Long userId;  
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(length = 50, nullable = false)
     private String reportType;                 

@@ -2,14 +2,19 @@ package com.daenggo.backend.walk.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import jakarta.persistence.Column;
 import lombok.Getter;
+import lombok.Setter;
 
-public class WalkRequestDto {
+public class WalkRequest {
 
     @Getter
     public static class WalkCompleteRequest {      // 산책 완료 시
@@ -50,6 +55,7 @@ public class WalkRequestDto {
     }
 
     @Getter
+    @Setter
     public static class WalkPhotoUploadRequest {   // 사진 등록
 
         private MultipartFile image;
@@ -59,9 +65,13 @@ public class WalkRequestDto {
         private BigDecimal latitude;
 
         private BigDecimal longitude;
-
-        private Long placeId;
         
     	private LocalDateTime takenAt;
+        
+        public void setTakenAt(String takenAt) {
+            this.takenAt = OffsetDateTime
+                    .parse(takenAt)
+                    .toLocalDateTime();
+        }
     }
 }

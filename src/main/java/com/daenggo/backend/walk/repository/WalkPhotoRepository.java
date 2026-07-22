@@ -10,10 +10,10 @@ import com.daenggo.backend.walk.entity.WalkRecord;
 
 public interface WalkPhotoRepository extends JpaRepository<WalkPhoto, Long> {
 
-    List<WalkPhoto> findByWalk(WalkRecord walkRecord);
+    List<WalkPhoto> findByWalkRecord(WalkRecord walkRecord);
 
-    Optional<WalkPhoto> findByWalkPhotoIdAndWalk(Long walkPhotoId, WalkRecord walkRecord);
+    Optional<WalkPhoto> findByWalkPhotoIdAndWalkRecord(Long walkPhotoId, WalkRecord walkRecord);
 
-    Optional<WalkPhoto> findFirstByWalkOrderByTakenAtAsc(WalkRecord walkRecord);
+    Optional<WalkPhoto> findFirstByWalkRecordOrderByTakenAtAsc(WalkRecord walkRecord);
 
 }

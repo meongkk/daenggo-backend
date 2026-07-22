@@ -64,7 +64,7 @@ public class Board {
     }
 
     /**
-     * 조회수 증가
+     * 게시글 상세가 조회될 때 현재 조회수를 1 증가시킨다.
      */
     public void increaseViewCount() {
         this.viewCount += 1;

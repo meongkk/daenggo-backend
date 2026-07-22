@@ -9,8 +9,8 @@ import com.daenggo.backend.walk.entity.WalkRecordPet;
 
 public interface WalkRecordPetRepository extends JpaRepository<WalkRecordPet, Long> {
 
-    List<WalkRecordPet> findByWalk(WalkRecord walkRecord);
+    List<WalkRecordPet> findByWalkRecord(WalkRecord walkRecord);
 
-    void deleteByWalk(WalkRecord walkRecord);
+    void deleteByWalkRecord(WalkRecord walkRecord);
 
 }

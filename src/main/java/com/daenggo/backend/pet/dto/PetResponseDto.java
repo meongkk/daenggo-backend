@@ -18,19 +18,13 @@ public final class PetResponseDto {
 
         private final Long petId;
         private final String name;
-        private final String breedName;
-        private final String size;
         private final String profileImageUrl;
-        private final boolean primary;
 
         public static Summary from(final Pet pet) {
             return new Summary(
                     pet.getId(),
                     pet.getName(),
-                    pet.getBreed().getName(),
-                    pet.getSize(),
-                    pet.getImage(),
-                    pet.isPrimary()
+                    pet.getImage()
             );
         }
     }

@@ -18,7 +18,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
             GroupMemberStatus status
     );
 
-    List<GroupMember> findAllByGroupIdAndStatus(
+    @EntityGraph(attributePaths = "user")
+    List<GroupMember> findAllByGroupIdAndStatusOrderByJoinedAtAsc(
             Long groupId,
             GroupMemberStatus status
     );

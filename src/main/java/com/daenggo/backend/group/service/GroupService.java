@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
 import java.util.List;
 
 /**
@@ -85,6 +86,46 @@ public class GroupService {
                         ),
                         member.getRole()
                 ))
+                .toList();
+    }
+
+    /**
+     * 로그인 회원이 참여 중인 그룹의 그룹원 목록 조회
+     *
+     * @param email 로그인 회원 이메일
+     * @param groupId 조회할 그룹 ID
+     * @return 활동 중인 그룹원 정보 목록
+     */
+    public List<GroupResponseDto.Member> getGroupMembers(
+            final String email,
+            final Long groupId
+    ) {
+        final User user = findActiveUser(email);
+
+        if (!groupRepository.existsById(groupId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "그룹을 찾을 수 없습니다."
+            );
+        }
+
+        if (!groupMemberRepository.existsByGroupIdAndUserIdAndStatus(
+                groupId,
+                user.getId(),
+                GroupMemberStatus.ACTIVE
+        )) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "해당 그룹에 참여 중인 회원만 그룹원 목록을 조회할 수 있습니다."
+            );
+        }
+
+        return groupMemberRepository.findAllByGroupIdAndStatusOrderByJoinedAtAsc(
+                        groupId,
+                        GroupMemberStatus.ACTIVE
+                )
+                .stream()
+                .map(GroupResponseDto.Member::from)
                 .toList();
     }
 

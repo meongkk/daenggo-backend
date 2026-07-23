@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -59,6 +60,25 @@ public class GroupController {
     ) {
         final List<GroupResponseDto.Summary> response = groupService.getMyGroups(
                 authentication.getName()
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 회원이 참여 중인 그룹의 그룹원 목록 조회
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 조회할 그룹 ID
+     * @return 활동 중인 그룹원 정보 목록 응답
+     */
+    @GetMapping("/{groupId}/members")
+    public ResponseEntity<List<GroupResponseDto.Member>> getGroupMembers(
+            final Authentication authentication,
+            @PathVariable final Long groupId
+    ) {
+        final List<GroupResponseDto.Member> response = groupService.getGroupMembers(
+                authentication.getName(),
+                groupId
         );
         return ResponseEntity.ok(response);
     }

@@ -15,5 +15,7 @@ public interface WalkPhotoRepository extends JpaRepository<WalkPhoto, Long> {
     Optional<WalkPhoto> findByWalkPhotoIdAndWalkRecord(Long walkPhotoId, WalkRecord walkRecord);
 
     Optional<WalkPhoto> findFirstByWalkRecordOrderByTakenAtAsc(WalkRecord walkRecord);
+    
+    List<WalkPhoto> findByWalkRecord_WalkRecordId(Long walkId);
 
 }

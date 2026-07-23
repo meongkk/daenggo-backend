@@ -47,7 +47,7 @@ public class WalkController {
 	    return ResponseEntity.ok(response);
     }
 	
-	@PostMapping("{walkId}/track-points/batch")
+	@PostMapping("/{walkId}/track-points/batch")
 	public ResponseEntity<Void> saveRoute(
 			@RequestParam Long userId, 
 			@PathVariable Long walkId, 
@@ -58,7 +58,7 @@ public class WalkController {
         return ResponseEntity.ok().build();
     }
 	
-	@PostMapping("/{walkId}/complete")
+	@PatchMapping("/{walkId}/complete")
 	public ResponseEntity<WalkCompleteResponse> completeWalk(
 	        @RequestParam Long userId,
 	        @PathVariable Long walkId,

@@ -38,6 +38,12 @@ public class PlaceSyncService {
     private final PlaceRepository placeRepository;
     private final PlaceConditionRepository conditionRepository;
     private final PolicyHistoryService policyHistoryService;
+    
+    /** 지역별 동기화 시 한 페이지에 요청할 개수 */
+    private static final int AREA_PAGE_SIZE = 100;
+
+    /** 지역별 동기화 시 최대 페이지 수 (무한 루프 방지) */
+    private static final int AREA_MAX_PAGE = 10;
 
     /**
      * 주변 장소를 조회하여 저장하거나 갱신한다.
@@ -232,5 +238,52 @@ public class PlaceSyncService {
         }
         log.info("출입 조건 재파싱: {}건", count);
         return count;
+    }
+
+    /**
+     * 지역 코드 기준으로 장소를 동기화한다.
+     *
+     * 페이지를 순회하며 해당 지역의 장소를 모두 수집한다.
+     * 신규 장소는 저장하고, 기존 장소는 수정일시를 비교해 변경된 경우만 갱신한다.
+     *
+     * @return 신규 저장된 장소 수
+     */
+    @Transactional
+    public int syncByArea(String areaCode, String areaName) {
+
+        int saved = 0;
+        int updated = 0;
+
+        for (int page = 1; page <= AREA_MAX_PAGE; page++) {
+
+            List<TourApiResponse.Item> items =
+                    tourApiClient.getPlacesByArea(areaCode, page, AREA_PAGE_SIZE);
+
+            if (items.isEmpty()) {
+                break;
+            }
+
+            for (TourApiResponse.Item item : items) {
+                Place existing = placeRepository.findByContentId(item.contentid()).orElse(null);
+
+                if (existing == null) {
+                    Place place = placeRepository.save(placeConverter.toEntity(item));
+                    saveCondition(place);
+                    saveIntro(place);
+                    saved++;
+                } else if (isModified(existing, item) && refreshCondition(existing, item)) {
+                    updated++;
+                }
+            }
+
+            // 마지막 페이지면 종료
+            if (items.size() < AREA_PAGE_SIZE) {
+                break;
+            }
+        }
+
+        log.info("지역 동기화 완료: {}({}) 신규 {}건, 갱신 {}건",
+                areaName, areaCode, saved, updated);
+        return saved;
     }
 }

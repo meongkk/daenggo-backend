@@ -146,6 +146,40 @@ public class GroupController {
     }
 
     /**
+     * 그룹장의 활동 중인 그룹원 내보내기
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 그룹원을 내보낼 그룹 ID
+     * @param memberId 내보낼 그룹원 ID
+     * @return 응답 본문 없는 성공 응답
+     */
+    @DeleteMapping("/{groupId}/members/{memberId}")
+    public ResponseEntity<Void> kickMember(
+            final Authentication authentication,
+            @PathVariable final Long groupId,
+            @PathVariable final Long memberId
+    ) {
+        groupService.kickMember(authentication.getName(), groupId, memberId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 그룹장만 남은 그룹의 완전 삭제
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 삭제할 그룹 ID
+     * @return 응답 본문 없는 성공 응답
+     */
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<Void> deleteGroup(
+            final Authentication authentication,
+            @PathVariable final Long groupId
+    ) {
+        groupService.deleteGroup(authentication.getName(), groupId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * 회원이 참여 중인 그룹의 그룹원 목록 조회
      *
      * @param authentication 로그인 회원 인증 정보

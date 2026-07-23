@@ -4,6 +4,8 @@ import com.daenggo.backend.group.entity.GroupMember;
 import com.daenggo.backend.group.entity.GroupMemberStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,4 +45,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     );
 
     long countByGroupIdAndStatus(Long groupId, GroupMemberStatus status);
+
+    @Modifying(flushAutomatically = true)
+    @Query("delete from GroupMember member where member.group.id = ?1")
+    void deleteAllByGroupId(Long groupId);
 }

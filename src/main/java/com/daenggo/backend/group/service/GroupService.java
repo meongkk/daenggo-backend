@@ -329,6 +329,49 @@ public class GroupService {
     }
 
     /**
+     * 그룹장만 남은 그룹의 모든 그룹원 기록 및 그룹 완전 삭제
+     *
+     * @param email 로그인 회원 이메일
+     * @param groupId 삭제할 그룹 ID
+     */
+    @Transactional
+    public void deleteGroup(final String email, final Long groupId) {
+        final User user = findActiveUser(email);
+        final GroupMember owner = groupMemberRepository
+                .findByGroupIdAndUserIdAndStatus(
+                        groupId,
+                        user.getId(),
+                        GroupMemberStatus.ACTIVE
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "참여 중인 그룹을 찾을 수 없습니다."
+                ));
+
+        if (owner.getRole() != GroupMemberRole.OWNER) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "그룹장만 그룹을 삭제할 수 있습니다."
+            );
+        }
+
+        final long activeMemberCount = groupMemberRepository.countByGroupIdAndStatus(
+                groupId,
+                GroupMemberStatus.ACTIVE
+        );
+        if (activeMemberCount != 1L) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "모든 그룹원을 내보낸 후 그룹을 삭제할 수 있습니다."
+            );
+        }
+
+        final Group group = owner.getGroup();
+        groupMemberRepository.deleteAllByGroupId(groupId);
+        groupRepository.delete(group);
+    }
+
+    /**
      * 로그인 회원이 참여 중인 그룹의 그룹원 목록 조회
      *
      * @param email 로그인 회원 이메일

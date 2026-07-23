@@ -169,7 +169,7 @@ public class PetService {
         final Pet pet = findOwnedPet(petId, user.getId());
 
         pet.softDelete();
-    }
+    } // 대표일 때 삭제하면 다른 동물이 대표로 되도록 수정 필요.
 
     /**
      * 활성 회원 조회

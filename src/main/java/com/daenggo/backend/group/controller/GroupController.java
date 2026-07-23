@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -126,6 +127,22 @@ public class GroupController {
                 request
         );
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 회원이 가입한 그룹 탈퇴
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 탈퇴할 그룹 ID
+     * @return 응답 본문 없는 성공 응답
+     */
+    @DeleteMapping("/{groupId}/members/me")
+    public ResponseEntity<Void> leaveGroup(
+            final Authentication authentication,
+            @PathVariable final Long groupId
+    ) {
+        groupService.leaveGroup(authentication.getName(), groupId);
+        return ResponseEntity.noContent().build();
     }
 
     /**

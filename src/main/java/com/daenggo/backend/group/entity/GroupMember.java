@@ -70,4 +70,14 @@ public class GroupMember {
     public void changeRole(final GroupMemberRole role) {
         this.role = role;
     }
+
+    public void leave(final LocalDateTime leftAt) {
+        this.status = GroupMemberStatus.LEFT;
+        this.leftAt = leftAt;
+    }
+
+    public void kick(final LocalDateTime leftAt) {
+        this.status = GroupMemberStatus.KICK;
+        this.leftAt = leftAt;
+    }
 }

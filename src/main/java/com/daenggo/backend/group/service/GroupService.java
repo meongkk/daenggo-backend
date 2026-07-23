@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -242,6 +243,89 @@ public class GroupService {
                 memberCount,
                 currentOwner.getRole()
         );
+    }
+
+    /**
+     * 회원이 본인의 그룹 탈퇴
+     *
+     * @param email 로그인 회원 이메일
+     * @param groupId 탈퇴할 그룹 ID
+     */
+    @Transactional
+    public void leaveGroup(final String email, final Long groupId) {
+        final User user = findActiveUser(email);
+        final GroupMember member = groupMemberRepository
+                .findByGroupIdAndUserIdAndStatus(
+                        groupId,
+                        user.getId(),
+                        GroupMemberStatus.ACTIVE
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "참여 중인 그룹을 찾을 수 없습니다."
+                ));
+
+        if (member.getRole() == GroupMemberRole.OWNER) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "그룹장은 권한을 양도한 후 탈퇴할 수 있습니다."
+            );
+        }
+
+        member.leave(LocalDateTime.now());
+    }
+
+    /**
+     * 그룹장의 활동 중인 그룹원 내보내기
+     *
+     * @param email 로그인 회원 이메일
+     * @param groupId 그룹원을 내보낼 그룹 ID
+     * @param memberId 내보낼 그룹원 ID
+     */
+    @Transactional
+    public void kickMember(
+            final String email,
+            final Long groupId,
+            final Long memberId
+    ) {
+        final User user = findActiveUser(email);
+        final GroupMember owner = groupMemberRepository
+                .findByGroupIdAndUserIdAndStatus(
+                        groupId,
+                        user.getId(),
+                        GroupMemberStatus.ACTIVE
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "참여 중인 그룹을 찾을 수 없습니다."
+                ));
+
+        if (owner.getRole() != GroupMemberRole.OWNER) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "그룹장만 그룹원을 내보낼 수 있습니다."
+            );
+        }
+
+        if (owner.getId().equals(memberId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "그룹장은 본인을 내보낼 수 없습니다."
+            );
+        }
+
+        final GroupMember member = groupMemberRepository
+                .findByIdAndGroupIdAndStatus(
+                        memberId,
+                        groupId,
+                        GroupMemberStatus.ACTIVE
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "내보낼 그룹원을 찾을 수 없습니다."
+                ));
+
+        member.kick(LocalDateTime.now());
     }
 
     /**

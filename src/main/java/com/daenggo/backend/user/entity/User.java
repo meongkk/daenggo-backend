@@ -28,7 +28,7 @@ public class User {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, unique = true, length = 100)
     private String email;
 
     @Column(nullable = false, length = 100)
@@ -79,5 +79,37 @@ public class User {
         this.provider = provider == null ? AuthProvider.LOCAL : provider;
         this.providerId = providerId;
         this.role = role == null ? UserRole.MEMBER : role;
+    }
+
+    /**
+     * 회원 프로필 정보 수정
+     *
+     * @param nickname 변경할 닉네임
+     * @param image 변경할 프로필 이미지 주소
+     */
+    public void updateProfile(final String nickname, final String image) {
+        if (nickname != null) {
+            this.nickname = nickname;
+        }
+
+        if (image != null) {
+            this.image = image;
+        }
+    }
+
+    /**
+     * 회원 비밀번호 변경
+     *
+     * @param password 암호화된 새 비밀번호
+     */
+    public void changePassword(final String password) {
+        this.password = password;
+    }
+
+    /**
+     * 회원 탈퇴 시각 기록
+     */
+    public void withdraw() {
+        this.deletedAt = LocalDateTime.now();
     }
 }

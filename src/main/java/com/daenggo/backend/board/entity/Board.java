@@ -6,12 +6,11 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "board")
@@ -43,8 +42,6 @@ public class Board {
     @Column(name = "view_count", nullable = false)
     private Integer viewCount = 0;
 
-    @CreatedDate
-    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -61,6 +58,17 @@ public class Board {
         this.title = title;
         this.content = content;
         this.user = user;
+    }
+
+    /**
+     * 게시글을 처음 저장하기 직전에 작성 시각을 UTC 기준으로 기록한다.
+     * API가 명확한 시간대를 포함해 응답할 수 있도록 서버 실행 환경과 관계없이 같은 기준을 사용한다.
+     */
+    @PrePersist
+    private void recordCreatedAt() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now(ZoneOffset.UTC);
+        }
     }
 
     /**

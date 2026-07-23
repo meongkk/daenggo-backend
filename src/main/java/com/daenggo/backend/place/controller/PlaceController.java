@@ -1,5 +1,6 @@
 package com.daenggo.backend.place.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.daenggo.backend.place.dto.PlaceDetailResponse;
 import com.daenggo.backend.place.dto.PlaceNearbyResponse;
 import com.daenggo.backend.place.dto.PlaceSearchCondition;
+import com.daenggo.backend.place.dto.RegionCountResponse;
 import com.daenggo.backend.place.service.PlaceService;
 
 import lombok.RequiredArgsConstructor;
@@ -43,5 +45,41 @@ public class PlaceController {
             @RequestParam(defaultValue = "20") int size) {
 
         return placeService.searchByKeyword(keyword, page, size);
+    }
+    
+    /**
+     * 반려동물 맞춤 장소 조회
+     *
+     * 등록된 반려동물의 무게, 크기, 견종 정보를 기준으로 자동 필터링한다.
+     */
+    @GetMapping("/nearby/pet")
+    public List<PlaceNearbyResponse> searchForPet(
+            @RequestParam BigDecimal swLat,
+            @RequestParam BigDecimal swLng,
+            @RequestParam BigDecimal neLat,
+            @RequestParam BigDecimal neLng,
+            @RequestParam Long petId,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Boolean indoorAllowedOnly) {
+
+        return placeService.searchForPet(
+                swLat, swLng, neLat, neLng, petId, category, indoorAllowedOnly);
+    }
+    
+    /** 지역별 장소 조회 */
+    @GetMapping("/regions")
+    public Page<PlaceNearbyResponse> findByRegion(
+            @RequestParam String region,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        return placeService.findByRegion(region, category, page, size);
+    }
+    
+    /** 지역 목록 조회 (장소 개수 포함) */
+    @GetMapping("/regions/list")
+    public List<RegionCountResponse> getRegions() {
+        return placeService.getRegions();
     }
 }

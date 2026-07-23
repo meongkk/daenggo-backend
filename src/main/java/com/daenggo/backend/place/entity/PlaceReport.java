@@ -49,4 +49,15 @@ public class PlaceReport {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+    
+    /** 신고 내용 수정 (대기 상태일 때만 호출) */
+    public void update(String reportType, String content) {
+        this.reportType = reportType;
+        this.content = content;
+    }
+
+    /** 대기 상태인지 확인 (수정·취소 가능 여부 판단용) */
+    public boolean isPending() {
+        return "PENDING".equals(this.status);
+    }
 }

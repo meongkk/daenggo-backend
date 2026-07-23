@@ -14,46 +14,66 @@ import java.util.Optional;
 public interface PlaceRepository extends JpaRepository<Place, Long> {
 
 	/** 관광공사 콘텐츠 ID로 장소 조회 (데이터 갱신 시 기존 장소 확인용) */
-    Optional<Place> findByContentId(String contentId);
+	Optional<Place> findByContentId(String contentId);
 
-    /** 관광공사 콘텐츠 ID 존재 여부 (동기화 시 중복 저장 방지용) */
-    boolean existsByContentId(String contentId);
+	/** 관광공사 콘텐츠 ID 존재 여부 (동기화 시 중복 저장 방지용) */
+	boolean existsByContentId(String contentId);
 
-    /**
-     * 지도 영역 + 반려동물 조건으로 장소 검색
-     *
-     * 파라미터가 null 또는 false면 해당 조건은 무시된다.
-     * 출입이 명시적으로 불가한 장소(DENIED)는 조건과 무관하게 항상 제외한다.
-     */
-    @Query("""
-        SELECT p FROM Place p
-        LEFT JOIN PlaceCondition c ON c.place = p
-        WHERE p.latitude BETWEEN :swLat AND :neLat
-          AND p.longitude BETWEEN :swLng AND :neLng
-          AND (:category IS NULL OR p.category = :category)
-          AND (:indoorAllowedOnly = false OR c.indoorStatus = 'ALLOWED')
-          AND (:petWeight IS NULL OR c.maxWeight IS NULL OR c.maxWeight >= :petWeight)
-          AND (:isDangerous = false OR c.dangerousAllowed <> 'DENIED')
-          AND (c.indoorStatus IS NULL OR c.indoorStatus <> 'DENIED')
-        """)
-    List<Place> searchByCondition(
-            @Param("swLat") BigDecimal swLat,
-            @Param("neLat") BigDecimal neLat,
-            @Param("swLng") BigDecimal swLng,
-            @Param("neLng") BigDecimal neLng,
-            @Param("category") String category,
-            @Param("indoorAllowedOnly") boolean indoorAllowedOnly,
-            @Param("petWeight") BigDecimal petWeight,
-            @Param("isDangerous") boolean isDangerous);
-    
-    /** 키워드로 장소명 또는 주소 검색 (페이징) */
-    @Query("""
-    	    SELECT p FROM Place p
-    	    WHERE p.title LIKE %:keyword%
-    	       OR p.address LIKE %:keyword%
-    	    ORDER BY
-    	        CASE WHEN p.title LIKE %:keyword% THEN 0 ELSE 1 END,
-    	        p.title
-    	    """)
-    	Page<Place> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+	/**
+	 * 지도 영역 + 반려동물 조건으로 장소 검색
+	 *
+	 * 파라미터가 null 또는 false면 해당 조건은 무시된다. 출입이 명시적으로 불가한 장소(DENIED)는 조건과 무관하게 항상 제외한다.
+	 */
+	@Query("""
+			SELECT p FROM Place p
+			LEFT JOIN PlaceCondition c ON c.place = p
+			WHERE p.latitude BETWEEN :swLat AND :neLat
+			  AND p.longitude BETWEEN :swLng AND :neLng
+			  AND (:category IS NULL OR p.category = :category)
+			  AND (:indoorAllowedOnly = false OR c.indoorStatus = 'ALLOWED')
+			  AND (:petWeight IS NULL OR c.maxWeight IS NULL OR c.maxWeight >= :petWeight)
+			  AND (:petSize IS NULL OR c.allowedSize IS NULL OR c.allowedSize = :petSize)
+			  AND (:isDangerous = false OR c.dangerousAllowed <> 'DENIED')
+			  AND (c.indoorStatus IS NULL OR c.indoorStatus <> 'DENIED')
+			""")
+	List<Place> searchByCondition(@Param("swLat") BigDecimal swLat, @Param("neLat") BigDecimal neLat,
+			@Param("swLng") BigDecimal swLng, @Param("neLng") BigDecimal neLng, @Param("category") String category,
+			@Param("indoorAllowedOnly") boolean indoorAllowedOnly, @Param("petWeight") BigDecimal petWeight,
+			@Param("petSize") String petSize, @Param("isDangerous") boolean isDangerous);
+
+	/** 키워드로 장소명 또는 주소 검색 (페이징) */
+	@Query("""
+			SELECT p FROM Place p
+			WHERE p.title LIKE %:keyword%
+			   OR p.address LIKE %:keyword%
+			ORDER BY
+			    CASE WHEN p.title LIKE %:keyword% THEN 0 ELSE 1 END,
+			    p.title
+			""")
+	Page<Place> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+	/**
+	 * 지역명으로 장소 검색 (주소 기준, 페이징)
+	 *
+	 * 관광공사 areaBasedList2 대신 저장된 주소로 필터링한다. 이미 수집한 데이터를 활용하므로 API 호출이 필요 없다.
+	 */
+	@Query("""
+			SELECT p FROM Place p
+			LEFT JOIN PlaceCondition c ON c.place = p
+			WHERE p.address LIKE CONCAT(:region, '%')
+			  AND (:category IS NULL OR p.category = :category)
+			  AND (c.indoorStatus IS NULL OR c.indoorStatus <> 'DENIED')
+			ORDER BY p.title
+			""")
+	Page<Place> findByRegion(@Param("region") String region, @Param("category") String category, Pageable pageable);
+
+	/** 데이터가 존재하는 지역 목록 (주소 첫 단어 기준, 개수 많은 순) */
+	@Query(value = """
+			SELECT SUBSTRING_INDEX(address, ' ', 1) AS region, COUNT(*) AS cnt
+			FROM place
+			WHERE address IS NOT NULL AND address <> ''
+			GROUP BY region
+			ORDER BY cnt DESC
+			""", nativeQuery = true)
+	List<Object[]> findRegionCounts();
 }

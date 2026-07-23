@@ -1,6 +1,8 @@
 package com.daenggo.backend.board.controller;
 
+import com.daenggo.backend.board.dto.BoardDeleteRequest;
 import com.daenggo.backend.board.dto.BoardResponse;
+import com.daenggo.backend.board.dto.BoardUpdateRequest;
 import com.daenggo.backend.board.dto.CommunityCategory;
 import com.daenggo.backend.board.service.CommunityPostService;
 import jakarta.validation.Valid;
@@ -10,13 +12,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -64,6 +60,29 @@ public class CommunityPostController {
     }
 
     /**
+     * 작성자 본인의 커뮤니티 게시글 제목과 내용을 수정한다.
+     *
+     * @param postId 수정할 게시글 식별자
+     * @param request 사용자 ID와 변경할 제목·내용
+     * @return 수정된 게시글 데이터와 HTTP 200 응답
+     */
+    @PatchMapping("/{postId}")
+    public ResponseEntity<BoardResponse> updatePost(
+            @PathVariable Long postId,
+            @Valid @RequestBody BoardUpdateRequest request
+    ) {
+        BoardResponse response = communityPostService.updatePost(
+                postId,
+                request.getUserId(),
+                request.getTitle(),
+                request.getContent(),
+                request.getImageUrls()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * 새로운 커뮤니티 게시글을 등록한다.
      *
      * @param request 게시글 등록 요청 데이터
@@ -85,6 +104,23 @@ public class CommunityPostController {
         System.out.println("프론트에서 넘어온 유저 ID: " + request.userId());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    /**
+     * 작성자 본인의 커뮤니티 게시글을 삭제한다.
+     *
+     * @param postId 삭제할 게시글 식별자
+     * @param request 삭제를 요청한 사용자 정보
+     * @return 응답 본문이 없는 HTTP 204 응답
+     */
+
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<Void> deletePost(
+            @PathVariable Long postId,
+            @Valid @RequestBody BoardDeleteRequest request
+    ) {
+        communityPostService.deletePost(postId, request.userId());
+
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -117,5 +153,8 @@ public class CommunityPostController {
 
             String tradeStatus
     ) {
+
     }
+
+
 }

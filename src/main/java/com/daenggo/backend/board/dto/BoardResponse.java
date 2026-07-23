@@ -28,6 +28,7 @@ public class BoardResponse {
     private Long commentCount;
     private Integer price;
     private String tradeStatus;
+    private Long userId;
 
 
     public static BoardResponse from(Board board) {
@@ -47,12 +48,14 @@ public class BoardResponse {
      * @return 프론트엔드에 전달할 게시글 응답 DTO
      */
     public static BoardResponse from(
+
             Board board,
             List<String> imageUrls,
             long commentCount
     ) {
         return from(board, imageUrls, commentCount, null);
     }
+
 
     /**
      * 일반 게시글 정보와 장터 전용 정보를 하나의 API 응답으로 합칩니다.
@@ -78,6 +81,8 @@ public class BoardResponse {
                 .commentCount(commentCount)
                 .price(marketBoard == null ? null : marketBoard.getPrice())
                 .tradeStatus(marketBoard == null ? null : marketBoard.getTradeStatus())
+                .userId(board.getUser().getId())
+                .nickname(board.getUser().getNickname())
                 .build();
     }
 }

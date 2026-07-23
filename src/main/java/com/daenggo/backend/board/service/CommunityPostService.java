@@ -1,5 +1,5 @@
 package com.daenggo.backend.board.service;
-
+import java.util.Objects;
 import com.daenggo.backend.board.dto.BoardResponse;
 import com.daenggo.backend.board.dto.CommunityCategory;
 import com.daenggo.backend.board.entity.Board;
@@ -28,6 +28,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class CommunityPostService {
+
+    /** 게시글 하나에 연결할 수 있는 최대 이미지 개수. */
+    private static final int MAX_IMAGE_COUNT = 5;
 
     /** 이미지 업로드 API가 발급한 안전한 URL 형식. */
     private static final Pattern COMMUNITY_IMAGE_URL_PATTERN = Pattern.compile(
@@ -234,6 +237,13 @@ public class CommunityPostService {
             return List.of();
         }
 
+        if (imageUrls.size() > MAX_IMAGE_COUNT) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "이미지는 최대 5장까지 등록할 수 있습니다."
+            );
+        }
+
         List<String> normalizedImageUrls = imageUrls.stream()
                 .map(String::trim)
                 .toList();
@@ -250,4 +260,92 @@ public class CommunityPostService {
 
         return normalizedImageUrls;
     }
+    /**
+     * 게시글 작성자를 확인한 후 게시글을 소프트 삭제한다.
+     *
+     * @param postId 삭제할 게시글 식별자
+     * @param userId 삭제를 요청한 사용자 식별자
+     * @throws ResponseStatusException 게시글이 없거나 이미 삭제된 경우
+     * @throws ResponseStatusException 요청한 사용자가 작성자가 아닌 경우
+     */
+    @Transactional
+    public void deletePost(Long postId, Long userId) {
+        Board board = boardRepository.findById(postId)
+                .filter(item -> item.getDeletedAt() == null)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "게시글을 찾을 수 없습니다. postId=" + postId
+                ));
+
+        if (!Objects.equals(board.getUser().getId(), userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "게시글 작성자만 삭제할 수 있습니다."
+            );
+        }
+
+        board.deleteSoftly();
+    }
+
+    /**
+     * 게시글 작성자를 확인한 후 제목과 내용을 수정한다.
+     *
+     * @param postId 수정할 게시글 식별자
+     * @param userId 수정을 요청한 사용자 식별자
+     * @param title 변경할 게시글 제목
+     * @param content 변경할 게시글 내용
+     * @param imageUrls 수정 후 게시글에 남길 이미지 URL 목록, null이면 기존 이미지 유지
+     * @return 수정된 게시글 응답 데이터
+     * @throws ResponseStatusException 게시글이 없거나 이미 삭제된 경우
+     * @throws ResponseStatusException 요청한 사용자가 작성자가 아닌 경우
+     */
+    @Transactional
+    public BoardResponse updatePost(
+            Long postId,
+            Long userId,
+            String title,
+            String content,
+            List<String> imageUrls
+    ) {
+        Board board = boardRepository.findActiveById(postId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "게시글을 찾을 수 없습니다. postId=" + postId
+                ));
+
+        if (!Objects.equals(board.getUser().getId(), userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "게시글 작성자만 수정할 수 있습니다."
+            );
+        }
+
+        board.update(title.trim(), content.trim());
+
+        List<BoardImage> currentBoardImages = boardImageRepository
+                .findAllByBoard_IdInOrderByIdAsc(List.of(postId));
+        List<String> responseImageUrls = currentBoardImages.stream()
+                .map(BoardImage::getImageUrl)
+                .toList();
+
+        if (imageUrls != null) {
+            List<String> validatedImageUrls = validateImageUrls(imageUrls);
+            boardImageRepository.deleteAll(currentBoardImages);
+
+            if (!validatedImageUrls.isEmpty()) {
+                List<BoardImage> updatedBoardImages = validatedImageUrls.stream()
+                        .map(imageUrl -> new BoardImage(board, imageUrl))
+                        .toList();
+                boardImageRepository.saveAll(updatedBoardImages);
+            }
+
+            responseImageUrls = validatedImageUrls;
+        }
+
+        long commentCount = commentRepository.countByBoard_Id(postId);
+        MarketBoard marketBoard = marketBoardRepository.findById(postId).orElse(null);
+
+        return BoardResponse.from(board, responseImageUrls, commentCount, marketBoard);
+    }
+
 }

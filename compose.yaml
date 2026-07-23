@@ -48,6 +48,8 @@ services:
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET를 .env에 설정하세요}"
       JWT_ISSUER: "${JWT_ISSUER:-daenggo-api}"
       JWT_ACCESS_TOKEN_EXPIRATION_SECONDS: "${JWT_ACCESS_TOKEN_EXPIRATION_SECONDS:-900}"
+      TOUR_API_BASE_URL: "${TOUR_API_BASE_URL}"
+      TOUR_API_SERVICE_KEY: "${TOUR_API_SERVICE_KEY}"
     volumes:
       - community-uploads:/app/uploads
 

@@ -15,17 +15,10 @@ public interface WalkRecordRepository extends JpaRepository<WalkRecord, Long> {
 //    List<WalkRecord> findByUserOrderByStartedAtDesc(User user);
 
     // 회원의 특정 산책 조회
-    Optional<WalkRecord> findByWalkRecordIdAndUser(Long walkRecordId, User user);
+    Optional<WalkRecord> findByWalkRecordIdAndUserAndIsDeletedFalse(Long walkRecordId, User user);
 
     // 월별 산책 조회 (캘린더)
-    List<WalkRecord> findByUserAndStartedAtBetween(
-            User user,
-            LocalDateTime start,
-            LocalDateTime end
-    );
-
-    // 특정 날짜 산책 목록
-    List<WalkRecord> findByUserAndStartedAtBetweenOrderByStartedAtDesc(
+    List<WalkRecord> findByUserAndStartedAtBetweenAndIsDeletedFalse(
             User user,
             LocalDateTime start,
             LocalDateTime end

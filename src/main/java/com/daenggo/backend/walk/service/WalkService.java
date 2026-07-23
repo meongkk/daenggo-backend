@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.daenggo.backend.pet.entity.Pet;
@@ -23,6 +24,7 @@ import com.daenggo.backend.walk.dto.WalkRequest.WalkPhotoUploadRequest;
 import com.daenggo.backend.walk.dto.WalkRequest.WalkRouteBatchRequest;
 import com.daenggo.backend.walk.dto.WalkRequest.WalkUpdateRequest;
 import com.daenggo.backend.walk.dto.WalkResponse.RoutePointResponse;
+import com.daenggo.backend.walk.dto.WalkResponse.WalkCalendarItem;
 import com.daenggo.backend.walk.dto.WalkResponse.WalkCalendarResponse;
 import com.daenggo.backend.walk.dto.WalkResponse.WalkCompleteResponse;
 import com.daenggo.backend.walk.dto.WalkResponse.WalkDetailResponse;
@@ -38,7 +40,6 @@ import com.daenggo.backend.walk.repository.WalkRecordPetRepository;
 import com.daenggo.backend.walk.repository.WalkRecordRepository;
 import com.daenggo.backend.walk.repository.WalkRouteRecordRepository;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -167,7 +168,7 @@ public class WalkService {
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
 
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 
 		
@@ -198,7 +199,7 @@ public class WalkService {
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
 
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		List<WalkRouteRecord> routeRecords = walkRouteRecordRepository.findByWalkRecordOrderBySequenceNoAsc(walk);
@@ -228,7 +229,7 @@ public class WalkService {
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
 
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		walk.update(request.getTitle(), request.getMemo());
@@ -260,7 +261,7 @@ public class WalkService {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		walk.delete();
@@ -274,16 +275,22 @@ public class WalkService {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
-		LocalDateTime start = LocalDate.of(year, month, 1).atStartOfDay();
-	    LocalDateTime end = start.plusMonths(1);
-	    
-	    List<LocalDate> walkDates = walkRecordRepository.findByUserAndStartedAtBetween(user, start, end)
-	    		.stream().map(walk -> walk.getStartedAt().toLocalDate())
-	    		.distinct()
+		LocalDate firstDay = LocalDate.of(year, month, 1);
+
+		LocalDateTime start = firstDay.atStartOfDay();
+		LocalDateTime end = firstDay.plusMonths(1).atStartOfDay();
+		
+		List<WalkRecord> walks = walkRecordRepository.findByUserAndStartedAtBetweenAndIsDeletedFalse(user, start, end);
+		
+	    List<WalkCalendarItem> items = walks.stream()
+	    		.map(i -> WalkCalendarItem.builder()
+	    				.walkRecordId(i.getWalkRecordId())
+	    				.walkDate(i.getStartedAt().toLocalDate())
+	    				.build())
 	    		.toList();
 	    
 	    WalkCalendarResponse response = WalkCalendarResponse.builder()
-	    		.walkDates(walkDates)
+	    		.walks(items)
 	    		.build();
 	    
 		return response;
@@ -296,7 +303,7 @@ public class WalkService {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		MultipartFile image = request.getImage();
@@ -347,7 +354,7 @@ public class WalkService {
 	    WalkPhoto savedPhoto = walkPhotoRepository.save(photo);
 
 	    WalkPhotoResponse response = WalkPhotoResponse.builder()
-        .photoId(savedPhoto.getWalkPhotoId())
+        .walkPhotoId(savedPhoto.getWalkPhotoId())
         .imageUrl(savedPhoto.getImageUrl())
         .caption(savedPhoto.getCaption())
         .latitude(savedPhoto.getLatitude())
@@ -356,6 +363,38 @@ public class WalkService {
         .build();
 
 	    return response;
+	}
+	
+	/**
+     * 산책 사진 조회
+     */
+	@Transactional(readOnly = true)
+	public List<WalkPhotoResponse> getPhotos(Long userId, Long walkId) {
+
+	    WalkRecord walkRecord = walkRecordRepository.findById(walkId)
+	            .orElseThrow(() -> new IllegalArgumentException("산책 기록이 없습니다."));
+
+	    // 본인 산책인지 확인
+	    if (!walkRecord.getUser().getId().equals(userId)) {
+	        throw new IllegalArgumentException("접근 권한이 없습니다.");
+	    }
+
+
+	    List<WalkPhoto> photos =
+	            walkPhotoRepository.findByWalkRecord_WalkRecordId(walkId);
+
+
+	    return photos.stream()
+	            .map(photo -> WalkPhotoResponse.builder()
+	                    .walkPhotoId(photo.getWalkPhotoId())
+	                    .imageUrl(photo.getImageUrl())
+	                    .caption(photo.getCaption())
+	                    .takenAt(photo.getTakenAt())
+	                    .latitude(photo.getLatitude())
+	                    .longitude(photo.getLongitude())
+	                    .build()
+	            )
+	            .toList();
 	}
 
 	/**

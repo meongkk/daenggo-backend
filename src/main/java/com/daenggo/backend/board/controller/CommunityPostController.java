@@ -78,8 +78,11 @@ public class CommunityPostController {
                 request.title(),
                 request.content(),
                 request.userId(),
-                request.imageUrls()
+                request.imageUrls(),
+                request.price(),
+                request.tradeStatus()
         );
+        System.out.println("프론트에서 넘어온 유저 ID: " + request.userId());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -108,7 +111,11 @@ public class CommunityPostController {
             Long userId,
 
             @Size(max = 5, message = "이미지는 최대 5장까지 등록할 수 있습니다.")
-            List<@NotBlank(message = "이미지 주소가 비어 있습니다.") String> imageUrls
+            List<@NotBlank(message = "이미지 주소가 비어 있습니다.") String> imageUrls,
+
+            Integer price,
+
+            String tradeStatus
     ) {
     }
 }

@@ -44,6 +44,10 @@ services:
       DB_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-daenggo}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
       DB_USERNAME: "${MYSQL_USER:-daenggo}"
       DB_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD를 .env에 설정하세요}"
+      ALLOW_UNAUTHENTICATED_DEVELOPMENT_API: "${ALLOW_UNAUTHENTICATED_DEVELOPMENT_API:-false}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET를 .env에 설정하세요}"
+      JWT_ISSUER: "${JWT_ISSUER:-daenggo-api}"
+      JWT_ACCESS_TOKEN_EXPIRATION_SECONDS: "${JWT_ACCESS_TOKEN_EXPIRATION_SECONDS:-900}"
     volumes:
       - community-uploads:/app/uploads
 

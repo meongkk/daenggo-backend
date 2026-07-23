@@ -23,11 +23,4 @@ public interface WalkRecordRepository extends JpaRepository<WalkRecord, Long> {
             LocalDateTime start,
             LocalDateTime end
     );
-
-    // 특정 날짜 산책 목록
-    List<WalkRecord> findByUserAndStartedAtBetweenOrderByStartedAtDesc(
-            User user,
-            LocalDateTime start,
-            LocalDateTime end
-    );
 }

@@ -39,7 +39,7 @@ public class PetService {
     public List<PetResponseDto.Summary> getMyPets(final String email) {
         final User user = findActiveUser(email);
 
-        return petRepository.findAllByUserId(user.getId())
+        return petRepository.findAllByUserIdAndDeletedAtIsNull(user.getId())
                 .stream()
                 .map(PetResponseDto.Summary::from)
                 .toList();
@@ -76,7 +76,7 @@ public class PetService {
         final boolean primary = Boolean.TRUE.equals(request.getPrimary());
 
         if (primary) {
-            petRepository.findByUserIdAndPrimaryTrue(user.getId())
+            petRepository.findByUserIdAndPrimaryTrueAndDeletedAtIsNull(user.getId())
                     .ifPresent(Pet::removePrimary);
         }
 
@@ -152,9 +152,23 @@ public class PetService {
             return;
         }
 
-        petRepository.findByUserIdAndPrimaryTrue(user.getId()) // 기존 대표 반려동물 해제
+        petRepository.findByUserIdAndPrimaryTrueAndDeletedAtIsNull(user.getId())
                 .ifPresent(Pet::removePrimary);
         pet.makePrimary();
+    }
+
+    /**
+     * 로그인 회원이 소유한 반려동물 삭제
+     *
+     * @param email 로그인 회원 이메일
+     * @param petId 삭제할 반려동물 ID
+     */
+    @Transactional
+    public void deletePet(final String email, final Long petId) {
+        final User user = findActiveUser(email);
+        final Pet pet = findOwnedPet(petId, user.getId());
+
+        pet.softDelete();
     }
 
     /**
@@ -179,7 +193,7 @@ public class PetService {
      * @return 로그인 회원이 소유한 반려동물 엔티티
      */
     private Pet findOwnedPet(final Long petId, final Long userId) {
-        return petRepository.findByIdAndUserId(petId, userId)
+        return petRepository.findByIdAndUserIdAndDeletedAtIsNull(petId, userId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "반려동물을 찾을 수 없습니다."

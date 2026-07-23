@@ -68,6 +68,9 @@ public class Pet {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @Column(name = "breed_text", length = 50)
     private String breedText;
 
@@ -163,5 +166,13 @@ public class Pet {
      */
     public void updateVaccine(final String vaccine) {
         this.vaccine = vaccine;
+    }
+
+    /**
+     * 반려동물 삭제 상태 기록
+     */
+    public void softDelete() {
+        this.primary = false;
+        this.deletedAt = LocalDateTime.now();
     }
 }

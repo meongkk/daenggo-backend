@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -120,6 +121,22 @@ public class PetController {
             @PathVariable final Long petId
     ) {
         petService.setPrimaryPet(authentication.getName(), petId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 로그인 회원이 소유한 반려동물 삭제
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param petId 삭제할 반려동물 ID
+     * @return 응답 본문 없는 성공 응답
+     */
+    @DeleteMapping("/{petId}")
+    public ResponseEntity<Void> deletePet(
+            final Authentication authentication,
+            @PathVariable final Long petId
+    ) {
+        petService.deletePet(authentication.getName(), petId);
         return ResponseEntity.noContent().build();
     }
 }

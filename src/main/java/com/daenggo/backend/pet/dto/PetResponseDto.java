@@ -1,5 +1,6 @@
 package com.daenggo.backend.pet.dto;
 
+import com.daenggo.backend.pet.entity.Breed;
 import com.daenggo.backend.pet.entity.Pet;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -18,19 +19,13 @@ public final class PetResponseDto {
 
         private final Long petId;
         private final String name;
-        private final String breedName;
-        private final String size;
         private final String profileImageUrl;
-        private final boolean primary;
 
-        public static Summary from(final Pet pet, final boolean primary) {
+        public static Summary from(final Pet pet) {
             return new Summary(
                     pet.getId(),
                     pet.getName(),
-                    pet.getBreed().getName(),
-                    pet.getSize(),
-                    pet.getImage(),
-                    primary
+                    pet.getImage()
             );
         }
     }
@@ -52,19 +47,20 @@ public final class PetResponseDto {
         private final boolean primary;
         private final LocalDateTime createdAt;
 
-        public static Detail from(final Pet pet, final boolean primary) {
+        public static Detail from(final Pet pet) {
+            final Breed breed = pet.getBreed();
             return new Detail(
                     pet.getId(),
                     pet.getName(),
-                    pet.getBreed().getId(),
-                    pet.getBreed().getName(),
+                    breed == null ? null : breed.getId(),
+                    breed == null ? null : breed.getName(),
                     pet.getBreedText(),
                     pet.getWeight(),
                     pet.getSize(),
                     pet.getImage(),
                     pet.getRegistrationNumber(),
                     pet.getVaccine(),
-                    primary,
+                    pet.isPrimary(),
                     pet.getCreatedAt()
             );
         }
@@ -87,10 +83,11 @@ public final class PetResponseDto {
         private final String qrCode;
 
         public static IdCard from(final Pet pet, final String qrCode) {
+            final Breed breed = pet.getBreed();
             return new IdCard(
                     pet.getId(),
                     pet.getName(),
-                    pet.getBreed().getName(),
+                    breed == null ? null : breed.getName(),
                     pet.getBreedText(),
                     pet.getWeight(),
                     pet.getSize(),

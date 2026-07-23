@@ -8,9 +8,13 @@ import java.util.Optional;
 
 public interface PetRepository extends JpaRepository<Pet, Long> {
 
-    List<Pet> findAllByUserId(Long userId);
+    List<Pet> findAllByUserIdAndDeletedAtIsNull(Long userId);
 
-    Optional<Pet> findByIdAndUserId(Long petId, Long userId);
+    Optional<Pet> findByIdAndUserIdAndDeletedAtIsNull(Long petId, Long userId);
 
-    boolean existsByIdAndUserId(Long petId, Long userId);
+    Optional<Pet> findByUserIdAndPrimaryTrueAndDeletedAtIsNull(Long userId);
+
+    Optional<Pet> findByIdAndDeletedAtIsNull(Long petId);
+
+    boolean existsByIdAndUserIdAndDeletedAtIsNull(Long petId, Long userId);
 }

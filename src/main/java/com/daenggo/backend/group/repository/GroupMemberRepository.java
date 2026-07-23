@@ -17,6 +17,13 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
             GroupMemberStatus status
     );
 
+    @EntityGraph(attributePaths = "user")
+    Optional<GroupMember> findByIdAndGroupIdAndStatus(
+            Long memberId,
+            Long groupId,
+            GroupMemberStatus status
+    );
+
     boolean existsByGroupIdAndUserIdAndStatus(
             Long groupId,
             Long userId,

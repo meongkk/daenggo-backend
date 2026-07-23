@@ -1,6 +1,7 @@
 package com.daenggo.backend.group.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -30,5 +31,13 @@ public final class GroupRequestDto {
 
         @Size(max = 500)
         private String description;
+    }
+
+    @Getter
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    public static class OwnerTransfer {
+
+        @NotNull
+        private Long memberId;
     }
 }

@@ -61,4 +61,8 @@ public class Group {
         }
         this.description = description;
     }
+
+    public void changeOwner(final User owner) {
+        this.owner = owner;
+    }
 }

@@ -66,4 +66,8 @@ public class GroupMember {
         this.role = role;
         this.status = status;
     }
+
+    public void changeRole(final GroupMemberRole role) {
+        this.role = role;
+    }
 }

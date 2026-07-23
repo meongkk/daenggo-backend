@@ -107,6 +107,28 @@ public class GroupController {
     }
 
     /**
+     * 그룹장 권한을 같은 그룹의 다른 그룹원에게 양도
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 권한을 양도할 그룹 ID
+     * @param request 새 그룹장으로 지정할 그룹원 요청
+     * @return 권한 양도 후 그룹 상세 정보 응답
+     */
+    @PatchMapping("/{groupId}/owner")
+    public ResponseEntity<GroupResponseDto.Detail> transferOwnership(
+            final Authentication authentication,
+            @PathVariable final Long groupId,
+            @Valid @RequestBody final GroupRequestDto.OwnerTransfer request
+    ) {
+        final GroupResponseDto.Detail response = groupService.transferOwnership(
+                authentication.getName(),
+                groupId,
+                request
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * 회원이 참여 중인 그룹의 그룹원 목록 조회
      *
      * @param authentication 로그인 회원 인증 정보

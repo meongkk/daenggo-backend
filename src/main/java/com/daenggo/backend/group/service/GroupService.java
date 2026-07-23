@@ -177,6 +177,74 @@ public class GroupService {
     }
 
     /**
+     * 그룹장 권한을 같은 그룹의 다른 그룹원에게 양도
+     *
+     * @param email 로그인 회원 이메일
+     * @param groupId 권한을 양도할 그룹 ID
+     * @param request 새 그룹장으로 지정할 그룹원 요청
+     * @return 권한 양도 후 그룹 상세 정보
+     */
+    @Transactional
+    public GroupResponseDto.Detail transferOwnership(
+            final String email,
+            final Long groupId,
+            final GroupRequestDto.OwnerTransfer request
+    ) {
+        final User user = findActiveUser(email);
+        final GroupMember currentOwner = groupMemberRepository
+                .findByGroupIdAndUserIdAndStatus(
+                        groupId,
+                        user.getId(),
+                        GroupMemberStatus.ACTIVE
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "참여 중인 그룹을 찾을 수 없습니다."
+                ));
+
+        if (currentOwner.getRole() != GroupMemberRole.OWNER) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "현재 그룹장만 그룹장 권한을 양도할 수 있습니다."
+            );
+        }
+
+        if (currentOwner.getId().equals(request.getMemberId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "본인에게 그룹장 권한을 양도할 수 없습니다."
+            );
+        }
+
+        final GroupMember newOwner = groupMemberRepository
+                .findByIdAndGroupIdAndStatus(
+                        request.getMemberId(),
+                        groupId,
+                        GroupMemberStatus.ACTIVE
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "새 그룹장으로 지정할 그룹원을 찾을 수 없습니다."
+                ));
+
+        final Group group = currentOwner.getGroup();
+        currentOwner.changeRole(GroupMemberRole.MEMBER);
+        newOwner.changeRole(GroupMemberRole.OWNER);
+        group.changeOwner(newOwner.getUser());
+
+        final long memberCount = groupMemberRepository.countByGroupIdAndStatus(
+                groupId,
+                GroupMemberStatus.ACTIVE
+        );
+
+        return GroupResponseDto.Detail.from(
+                group,
+                memberCount,
+                currentOwner.getRole()
+        );
+    }
+
+    /**
      * 로그인 회원이 참여 중인 그룹의 그룹원 목록 조회
      *
      * @param email 로그인 회원 이메일

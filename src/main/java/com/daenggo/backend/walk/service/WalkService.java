@@ -168,7 +168,7 @@ public class WalkService {
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
 
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 
 		
@@ -199,7 +199,7 @@ public class WalkService {
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
 
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		List<WalkRouteRecord> routeRecords = walkRouteRecordRepository.findByWalkRecordOrderBySequenceNoAsc(walk);
@@ -229,7 +229,7 @@ public class WalkService {
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
 
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		walk.update(request.getTitle(), request.getMemo());
@@ -261,7 +261,7 @@ public class WalkService {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		walk.delete();
@@ -280,7 +280,7 @@ public class WalkService {
 		LocalDateTime start = firstDay.atStartOfDay();
 		LocalDateTime end = firstDay.plusMonths(1).atStartOfDay();
 		
-		List<WalkRecord> walks = walkRecordRepository.findByUserAndStartedAtBetween(user, start, end);
+		List<WalkRecord> walks = walkRecordRepository.findByUserAndStartedAtBetweenAndIsDeletedFalse(user, start, end);
 		
 	    List<WalkCalendarItem> items = walks.stream()
 	    		.map(i -> WalkCalendarItem.builder()
@@ -303,7 +303,7 @@ public class WalkService {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		MultipartFile image = request.getImage();

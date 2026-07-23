@@ -8,10 +8,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * 그룹 관리 REST 컨트롤러
@@ -42,5 +45,21 @@ public class GroupController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    /**
+     * 로그인 회원이 참여 중인 그룹 목록 조회
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @return 참여 중인 그룹 요약 정보 목록 응답
+     */
+    @GetMapping
+    public ResponseEntity<List<GroupResponseDto.Summary>> getMyGroups(
+            final Authentication authentication
+    ) {
+        final List<GroupResponseDto.Summary> response = groupService.getMyGroups(
+                authentication.getName()
+        );
+        return ResponseEntity.ok(response);
     }
 }

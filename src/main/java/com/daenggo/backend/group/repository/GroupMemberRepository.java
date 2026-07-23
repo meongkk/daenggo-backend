@@ -2,6 +2,7 @@ package com.daenggo.backend.group.repository;
 
 import com.daenggo.backend.group.entity.GroupMember;
 import com.daenggo.backend.group.entity.GroupMemberStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -21,4 +22,12 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
             Long groupId,
             GroupMemberStatus status
     );
+
+    @EntityGraph(attributePaths = "group")
+    List<GroupMember> findAllByUserIdAndStatusOrderByJoinedAtDesc(
+            Long userId,
+            GroupMemberStatus status
+    );
+
+    long countByGroupIdAndStatus(Long groupId, GroupMemberStatus status);
 }

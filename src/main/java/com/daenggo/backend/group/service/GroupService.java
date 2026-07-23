@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.List;
 
 /**
  * 그룹 관리 비즈니스 로직
@@ -40,11 +41,7 @@ public class GroupService {
             final String email,
             final GroupRequestDto.Create request
     ) {
-        final User owner = userRepository.findByEmailAndDeletedAtIsNull(email)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED,
-                        "인증된 회원을 찾을 수 없습니다."
-                ));
+        final User owner = findActiveUser(email);
 
         final Group group = groupRepository.save(Group.builder()
                 .owner(owner)
@@ -64,6 +61,45 @@ public class GroupService {
                 1L,
                 GroupMemberRole.OWNER
         );
+    }
+
+    /**
+     * 로그인한 회원이 참여 중인 그룹 목록 조회
+     *
+     * @param email 로그인 회원 이메일
+     * @return 참여 중인 그룹 요약 정보 목록
+     */
+    public List<GroupResponseDto.Summary> getMyGroups(final String email) {
+        final User user = findActiveUser(email);
+
+        return groupMemberRepository.findAllByUserIdAndStatusOrderByJoinedAtDesc(
+                        user.getId(),
+                        GroupMemberStatus.ACTIVE
+                )
+                .stream()
+                .map(member -> GroupResponseDto.Summary.from(
+                        member.getGroup(),
+                        groupMemberRepository.countByGroupIdAndStatus(
+                                member.getGroup().getId(),
+                                GroupMemberStatus.ACTIVE
+                        ),
+                        member.getRole()
+                ))
+                .toList();
+    }
+
+    /**
+     * 탈퇴하지 않은 로그인 회원 조회
+     *
+     * @param email 로그인 회원 이메일
+     * @return 활성 회원 엔티티
+     */
+    private User findActiveUser(final String email) {
+        return userRepository.findByEmailAndDeletedAtIsNull(email)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "인증된 회원을 찾을 수 없습니다."
+                ));
     }
 
     /**

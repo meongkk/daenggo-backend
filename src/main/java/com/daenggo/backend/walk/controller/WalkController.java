@@ -1,5 +1,7 @@
 package com.daenggo.backend.walk.controller;
 
+import java.util.List;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 //import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -137,6 +139,20 @@ public class WalkController {
 
 	    return ResponseEntity.ok(walkService.uploadPhoto(userId, walkId, request));
 	}
+	
+	/**
+	 * 산책 사진 조회
+	 */
+	@GetMapping("/{walkId}/photos")
+	public ResponseEntity<List<WalkPhotoResponse>> getPhotos(
+	        @RequestParam Long userId,
+	        @PathVariable Long walkId) {
+
+	    return ResponseEntity.ok(
+	        walkService.getPhotos(userId, walkId)
+	    );
+	}
+	
 
 	/**
 	 * 산책 사진 삭제

@@ -82,14 +82,24 @@ public class WalkResponse {
     @Builder
     public static class WalkCalendarResponse {      // 월별 캘린더 조회
 
-        private List<LocalDate> walkDates;
+        private List<WalkCalendarItem> walks;
+    }
+    
+    @Getter
+    @Builder
+    public static class WalkCalendarItem {
+
+        private Long walkRecordId;
+
+        private LocalDate walkDate;
+
     }
 
     @Getter
     @Builder
     public static class WalkPhotoResponse {         // 사진 등록
 
-        private Long photoId;
+        private Long walkPhotoId;
 
         private String imageUrl;
 

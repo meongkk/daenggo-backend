@@ -54,4 +54,11 @@ public class Group {
         this.name = name;
         this.description = description;
     }
+
+    public void updateInfo(final String name, final String description) {
+        if (name != null) {
+            this.name = name;
+        }
+        this.description = description;
+    }
 }

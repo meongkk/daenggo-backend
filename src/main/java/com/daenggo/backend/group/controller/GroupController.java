@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -79,6 +80,28 @@ public class GroupController {
         final GroupResponseDto.Detail response = groupService.getGroupDetail(
                 authentication.getName(),
                 groupId
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 그룹장의 그룹명 및 그룹 설명 수정
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 수정할 그룹 ID
+     * @param request 그룹 정보 수정 요청
+     * @return 수정된 그룹 상세 정보 응답
+     */
+    @PatchMapping("/{groupId}")
+    public ResponseEntity<GroupResponseDto.Detail> updateGroup(
+            final Authentication authentication,
+            @PathVariable final Long groupId,
+            @Valid @RequestBody final GroupRequestDto.Update request
+    ) {
+        final GroupResponseDto.Detail response = groupService.updateGroup(
+                authentication.getName(),
+                groupId,
+                request
         );
         return ResponseEntity.ok(response);
     }

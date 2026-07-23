@@ -126,6 +126,57 @@ public class GroupService {
     }
 
     /**
+     * 그룹장의 그룹명 및 그룹 설명 수정
+     *
+     * @param email 로그인 회원 이메일
+     * @param groupId 수정할 그룹 ID
+     * @param request 그룹 정보 수정 요청
+     * @return 수정된 그룹 상세 정보
+     */
+    @Transactional
+    public GroupResponseDto.Detail updateGroup(
+            final String email,
+            final Long groupId,
+            final GroupRequestDto.Update request
+    ) {
+        final User user = findActiveUser(email);
+        final GroupMember member = groupMemberRepository
+                .findByGroupIdAndUserIdAndStatus(
+                        groupId,
+                        user.getId(),
+                        GroupMemberStatus.ACTIVE
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "참여 중인 그룹을 찾을 수 없습니다."
+                ));
+
+        if (member.getRole() != GroupMemberRole.OWNER) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "그룹장만 그룹 정보를 수정할 수 있습니다."
+            );
+        }
+
+        final Group group = member.getGroup();
+        group.updateInfo(
+                normalizeName(request.getName()),
+                normalizeDescription(request.getDescription())
+        );
+
+        final long memberCount = groupMemberRepository.countByGroupIdAndStatus(
+                groupId,
+                GroupMemberStatus.ACTIVE
+        );
+
+        return GroupResponseDto.Detail.from(
+                group,
+                memberCount,
+                member.getRole()
+        );
+    }
+
+    /**
      * 로그인 회원이 참여 중인 그룹의 그룹원 목록 조회
      *
      * @param email 로그인 회원 이메일
@@ -177,6 +228,25 @@ public class GroupService {
                         HttpStatus.UNAUTHORIZED,
                         "인증된 회원을 찾을 수 없습니다."
                 ));
+    }
+
+    /**
+     * 변경할 그룹명의 앞뒤 공백 제거 및 빈 값 검증
+     *
+     * @param name 입력된 그룹명
+     * @return 앞뒤 공백이 제거된 그룹명 또는 입력되지 않은 경우 null
+     */
+    private String normalizeName(final String name) {
+        if (name == null) {
+            return null;
+        }
+        if (name.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "그룹명은 공백일 수 없습니다."
+            );
+        }
+        return name.strip();
     }
 
     /**

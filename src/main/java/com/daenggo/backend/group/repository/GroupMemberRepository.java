@@ -10,7 +10,12 @@ import java.util.Optional;
 
 public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> {
 
-    Optional<GroupMember> findByGroupIdAndUserId(Long groupId, Long userId);
+    @EntityGraph(attributePaths = {"group", "group.owner"})
+    Optional<GroupMember> findByGroupIdAndUserIdAndStatus(
+            Long groupId,
+            Long userId,
+            GroupMemberStatus status
+    );
 
     boolean existsByGroupIdAndUserIdAndStatus(
             Long groupId,

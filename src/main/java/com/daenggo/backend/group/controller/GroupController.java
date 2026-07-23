@@ -65,6 +65,25 @@ public class GroupController {
     }
 
     /**
+     * 로그인 회원이 선택한 참여 그룹의 상세 정보 조회
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 조회할 그룹 ID
+     * @return 선택한 그룹 상세 정보 응답
+     */
+    @GetMapping("/{groupId}")
+    public ResponseEntity<GroupResponseDto.Detail> getGroupDetail(
+            final Authentication authentication,
+            @PathVariable final Long groupId
+    ) {
+        final GroupResponseDto.Detail response = groupService.getGroupDetail(
+                authentication.getName(),
+                groupId
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * 회원이 참여 중인 그룹의 그룹원 목록 조회
      *
      * @param authentication 로그인 회원 인증 정보

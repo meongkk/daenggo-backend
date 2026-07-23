@@ -1,0 +1,88 @@
+name: daenggo
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: daenggo-mysql
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD를 .env에 설정하세요}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-daenggo}"
+      MYSQL_USER: "${MYSQL_USER:-daenggo}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD를 .env에 설정하세요}"
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: daenggo-backend:local
+    container_name: daenggo-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-daenggo}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+      DB_USERNAME: "${MYSQL_USER:-daenggo}"
+      DB_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD를 .env에 설정하세요}"
+      ALLOW_UNAUTHENTICATED_DEVELOPMENT_API: "${ALLOW_UNAUTHENTICATED_DEVELOPMENT_API:-false}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET를 .env에 설정하세요}"
+      JWT_ISSUER: "${JWT_ISSUER:-daenggo-api}"
+      JWT_ACCESS_TOKEN_EXPIRATION_SECONDS: "${JWT_ACCESS_TOKEN_EXPIRATION_SECONDS:-900}"
+    volumes:
+      - community-uploads:/app/uploads
+
+  frontend:
+    build:
+      context: "${FRONTEND_PATH:-../daenggo-FE}"
+      dockerfile_inline: |
+        FROM node:22-alpine AS builder
+        WORKDIR /app
+        COPY package*.json ./
+        RUN npm ci
+        COPY . .
+        ARG VITE_BOARD_WRITE_API_URL
+        ARG VITE_BOARD_WRITER_ID
+        ENV VITE_BOARD_WRITE_API_URL=$${VITE_BOARD_WRITE_API_URL}
+        ENV VITE_BOARD_WRITER_ID=$${VITE_BOARD_WRITER_ID}
+        RUN npm run build
+
+        FROM nginx:alpine
+        COPY --from=builder /app/dist /usr/share/nginx/html
+      args:
+        VITE_BOARD_WRITE_API_URL: /api/community/posts
+        VITE_BOARD_WRITER_ID: "${VITE_BOARD_WRITER_ID:-1}"
+    image: daenggo-frontend:local
+    container_name: daenggo-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  mysql-data:
+    name: daenggo-mysql-data-rootonly
+  community-uploads:
+    name: daenggo-community-uploads

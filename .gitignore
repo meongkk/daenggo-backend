@@ -34,8 +34,13 @@ build/
 
 .gradle/
 .idea/
-
+.AGENTS.md
 .env
 application-local.yml
 
 src/main/resources/application-local.properties
+
+# Local image uploads
+/uploads/
+
+

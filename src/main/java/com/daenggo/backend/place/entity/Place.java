@@ -44,8 +44,17 @@ public class Place {
     @Column(precision = 10, scale = 7)
     private BigDecimal longitude;           
 
-    @Column(length = 50)
-    private String tel;                  
+    @Column(length = 100)
+    private String tel;
+    
+    @Column(length = 500)
+    private String openTime;               // 운영시간 / 체크인·아웃
+
+    @Column(length = 200)
+    private String restDate;               // 휴무일
+
+    @Column(length = 100)
+    private String parking;                // 주차 가능 여부
 
     @Column(length = 500)
     private String thumbnail;                // 대표 이미지 (firstimage)
@@ -53,4 +62,12 @@ public class Place {
     private LocalDateTime apiModifiedAt;     // API 수정일시 (modifiedtime)
 
     private LocalDateTime createdAt;         // DB 저장일시
+    
+    /** 관광공사 소개 정보(detailIntro2)로 상세 항목을 채운다 */
+    public void updateIntro(String tel, String openTime, String restDate, String parking) {
+        this.tel = tel;
+        this.openTime = openTime;
+        this.restDate = restDate;
+        this.parking = parking;
+    }
 }

@@ -15,9 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.AccessLevel;
 import java.time.LocalDateTime;
-
-// User 파일 추가 필요
-//import com.daenggo.backend.user.entity.User;
+import com.daenggo.backend.user.entity.User;
 
 @Entity
 @Table(name = "place_report")
@@ -35,14 +33,9 @@ public class PlaceReport {
     @JoinColumn(name = "place_id", nullable = false)
     private Place place;                      
 
-// User 파일 추가 필요
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "user_id", nullable = false)
-//    private User user;
-    
- // 임시: User 엔티티 병합 후 위에걸로 교체
-    @Column(name = "user_id", nullable = false)
-    private Long userId;  
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(length = 50, nullable = false)
     private String reportType;                 
@@ -56,4 +49,15 @@ public class PlaceReport {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+    
+    /** 신고 내용 수정 (대기 상태일 때만 호출) */
+    public void update(String reportType, String content) {
+        this.reportType = reportType;
+        this.content = content;
+    }
+
+    /** 대기 상태인지 확인 (수정·취소 가능 여부 판단용) */
+    public boolean isPending() {
+        return "PENDING".equals(this.status);
+    }
 }

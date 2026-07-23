@@ -59,5 +59,17 @@ public class PlaceCondition {
     private String amenities;                  
 
     @Lob
-    private String rawText;                   
+    private String rawText;
+
+    /** 파싱 규칙 개선 시 재파싱 결과로 갱신 */
+    public void updateParsed(String indoorStatus, String leashRequired,
+                             String muzzleRequired, String dangerousAllowed,
+                             BigDecimal maxWeight, String allowedSize) {
+        this.indoorStatus = indoorStatus;
+        this.leashRequired = leashRequired;
+        this.muzzleRequired = muzzleRequired;
+        this.dangerousAllowed = dangerousAllowed;
+        this.maxWeight = maxWeight;
+        this.allowedSize = allowedSize;
+    }
 }

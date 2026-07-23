@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.daenggo.backend.user.entity.User;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -33,9 +35,9 @@ public class WalkRecord {
 	private Long walkRecordId;
 	
 	
-//	@ManyToOne(fetch = FetchType.LAZY)
-//	@JoinColumn(name="user_id", nullable = false)
-//	private User user;						  					// 아직 entity가 없어 오류 발생 -> 주석 처리
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name="user_id", nullable = false)
+	private User user;
 	
 	@Column(length=200)
 	private String title;
@@ -56,10 +58,37 @@ public class WalkRecord {
 	@Column(name="distance_m", precision=12, scale=2)
 	private BigDecimal distanceM;
 	
-	@Column(name="avg_speed_kmh", precision=6, scale=2)
-	private BigDecimal avgSpeedKmh;
+	@Column(name="avg_pace_sec")
+	private Integer avgPaceSec;
 	
-	@Column(length = 20, nullable = false)
-	private String status;
+	@Column(name = "is_deleted", nullable = false)
+	private boolean isDeleted = false;
+	
+	public void complete(
+			String title,
+			String memo,
+			LocalDateTime endedAt,
+			Integer durationSec,
+			BigDecimal distanceM,
+			Integer avgPaceSec
+			
+			) {
+		this.title = title;
+		this.memo = memo;
+		this.endedAt = endedAt;
+		this.durationSec = durationSec;
+		this.distanceM = distanceM;
+		this.avgPaceSec = avgPaceSec;
+		
+	}
+	
+	public void update(String title, String memo) {
+		this.title = title;
+		this.memo = memo;
+	}
+	
+	public void delete() {
+		this.isDeleted = true;
+	}
 	
 }

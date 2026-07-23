@@ -4,9 +4,11 @@ import com.daenggo.backend.board.dto.BoardResponse;
 import com.daenggo.backend.board.dto.CommunityCategory;
 import com.daenggo.backend.board.entity.Board;
 import com.daenggo.backend.board.entity.BoardImage;
+import com.daenggo.backend.board.entity.MarketBoard;
 import com.daenggo.backend.board.repository.BoardImageRepository;
 import com.daenggo.backend.board.repository.BoardRepository;
 import com.daenggo.backend.board.repository.CommentRepository;
+import com.daenggo.backend.board.repository.MarketBoardRepository;
 import com.daenggo.backend.user.entity.User;
 import jakarta.persistence.EntityManager;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -39,6 +43,9 @@ public class CommunityPostService {
     /** 게시글별 실제 댓글 개수를 조회하는 저장소. */
     private final CommentRepository commentRepository;
 
+    /** 장터 글의 가격과 삽니다/팝니다 상태를 저장하고 조회하는 저장소. */
+    private final MarketBoardRepository marketBoardRepository;
+
     /** 작성자 엔티티 조회에 사용하는 엔티티 매니저. */
     private final EntityManager entityManager;
 
@@ -53,11 +60,13 @@ public class CommunityPostService {
             BoardRepository boardRepository,
             BoardImageRepository boardImageRepository,
             CommentRepository commentRepository,
+            MarketBoardRepository marketBoardRepository,
             EntityManager entityManager
     ) {
         this.boardRepository = boardRepository;
         this.boardImageRepository = boardImageRepository;
         this.commentRepository = commentRepository;
+        this.marketBoardRepository = marketBoardRepository;
         this.entityManager = entityManager;
     }
 
@@ -97,11 +106,18 @@ public class CommunityPostService {
                         CommentRepository.BoardCommentCount::getCommentCount
                 ));
 
+        // 장터 게시판일 때만 장터 전용 테이블의 가격과 거래 상태를 한 번에 조회합니다.
+        Map<Long, MarketBoard> marketBoardByBoardId = category == CommunityCategory.MARKET
+                ? marketBoardRepository.findAllById(boardIds).stream()
+                        .collect(Collectors.toMap(MarketBoard::getId, marketBoard -> marketBoard))
+                : Map.of();
+
         return boards.stream()
                 .map(board -> BoardResponse.from(
                         board,
                         imageUrlsByBoardId.getOrDefault(board.getId(), List.of()),
-                        commentCountByBoardId.getOrDefault(board.getId(), 0L)
+                        commentCountByBoardId.getOrDefault(board.getId(), 0L),
+                        marketBoardByBoardId.get(board.getId())
                 ))
                 .toList();
     }
@@ -132,8 +148,9 @@ public class CommunityPostService {
                 .toList();
 
         long commentCount = commentRepository.countByBoard_Id(postId);
+        MarketBoard marketBoard = marketBoardRepository.findById(postId).orElse(null);
 
-        return BoardResponse.from(board, imageUrls, commentCount);
+        return BoardResponse.from(board, imageUrls, commentCount, marketBoard);
     }
 
     /**
@@ -153,7 +170,9 @@ public class CommunityPostService {
             String title,
             String content,
             Long userId,
-            List<String> imageUrls
+            List<String> imageUrls,
+            Integer price,
+            String tradeStatus
     ) {
         User user = entityManager.find(User.class, userId);
 
@@ -167,6 +186,32 @@ public class CommunityPostService {
         List<String> validatedImageUrls = validateImageUrls(imageUrls);
         Board board = new Board(category.name(), title, content, user);
         Board savedBoard = boardRepository.save(board);
+        MarketBoard savedMarketBoard = null;
+
+        if (category == CommunityCategory.MARKET) {
+            String normalizedTradeStatus = tradeStatus == null
+                    ? null
+                    : tradeStatus.trim().toUpperCase(Locale.ROOT);
+
+            if (price == null || price < 0) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "장터 게시글의 가격은 0원 이상이어야 합니다."
+                );
+            }
+
+            if (!Set.of("SELL", "BUY").contains(normalizedTradeStatus)) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "거래 종류는 SELL(팝니다) 또는 BUY(삽니다)여야 합니다."
+                );
+            }
+
+            // board의 post_id를 그대로 사용해 market_board에 장터 정보를 연결합니다.
+            savedMarketBoard = marketBoardRepository.save(
+                    new MarketBoard(savedBoard, price, normalizedTradeStatus)
+            );
+        }
 
         if (!validatedImageUrls.isEmpty()) {
             List<BoardImage> boardImages = validatedImageUrls.stream()
@@ -175,7 +220,7 @@ public class CommunityPostService {
             boardImageRepository.saveAll(boardImages);
         }
 
-        return BoardResponse.from(savedBoard, validatedImageUrls);
+        return BoardResponse.from(savedBoard, validatedImageUrls, 0L, savedMarketBoard);
     }
 
     /**

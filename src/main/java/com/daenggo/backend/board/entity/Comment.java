@@ -6,7 +6,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -34,18 +35,25 @@ public class Comment {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    @CreatedDate
+    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @CreatedDate
-    @Column(name = "updated_at", updatable = false)
+    @UpdateTimestamp
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @Builder
     public Comment(Board board, User user, String content) {
         this.board = board;
         this.user = user;
+        this.content = content;
+    }
+
+    /**
+     * 댓글 내용을 변경한다. 트랜잭션 안에서 호출하면 JPA가 변경을 감지해 DB에 반영한다.
+     */
+    public void updateContent(String content) {
         this.content = content;
     }
 }

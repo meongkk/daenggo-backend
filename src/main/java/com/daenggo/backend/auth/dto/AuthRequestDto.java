@@ -45,7 +45,7 @@ public final class AuthRequestDto {
     public static class Login {
 
         @NotBlank
-        @Email
+//        @Email// 로그인할때 @없으면 로그인이 안됨
         @Size(max = 100)
         private String email;
 

@@ -1,0 +1,200 @@
+package com.daenggo.backend.group.controller;
+
+import com.daenggo.backend.group.dto.GroupRequestDto;
+import com.daenggo.backend.group.dto.GroupResponseDto;
+import com.daenggo.backend.group.service.GroupService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+/**
+ * 그룹 관리 REST 컨트롤러
+ */
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/groups")
+public class GroupController {
+
+    private final GroupService groupService;
+
+    /**
+     * 로그인 회원의 그룹 생성
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param request 그룹 생성 요청
+     * @return 생성된 그룹 상세 정보 응답
+     */
+    @PostMapping
+    public ResponseEntity<GroupResponseDto.Detail> create(
+            final Authentication authentication,
+            @Valid @RequestBody final GroupRequestDto.Create request
+    ) {
+        final GroupResponseDto.Detail response = groupService.create(
+                authentication.getName(),
+                request
+        );
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    /**
+     * 로그인 회원이 참여 중인 그룹 목록 조회
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @return 참여 중인 그룹 요약 정보 목록 응답
+     */
+    @GetMapping
+    public ResponseEntity<List<GroupResponseDto.Summary>> getMyGroups(
+            final Authentication authentication
+    ) {
+        final List<GroupResponseDto.Summary> response = groupService.getMyGroups(
+                authentication.getName()
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 로그인 회원이 선택한 참여 그룹의 상세 정보 조회
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 조회할 그룹 ID
+     * @return 선택한 그룹 상세 정보 응답
+     */
+    @GetMapping("/{groupId}")
+    public ResponseEntity<GroupResponseDto.Detail> getGroupDetail(
+            final Authentication authentication,
+            @PathVariable final Long groupId
+    ) {
+        final GroupResponseDto.Detail response = groupService.getGroupDetail(
+                authentication.getName(),
+                groupId
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 그룹장의 그룹명 및 그룹 설명 수정
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 수정할 그룹 ID
+     * @param request 그룹 정보 수정 요청
+     * @return 수정된 그룹 상세 정보 응답
+     */
+    @PatchMapping("/{groupId}")
+    public ResponseEntity<GroupResponseDto.Detail> updateGroup(
+            final Authentication authentication,
+            @PathVariable final Long groupId,
+            @Valid @RequestBody final GroupRequestDto.Update request
+    ) {
+        final GroupResponseDto.Detail response = groupService.updateGroup(
+                authentication.getName(),
+                groupId,
+                request
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 그룹장 권한을 같은 그룹의 다른 그룹원에게 양도
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 권한을 양도할 그룹 ID
+     * @param request 새 그룹장으로 지정할 그룹원 요청
+     * @return 권한 양도 후 그룹 상세 정보 응답
+     */
+    @PatchMapping("/{groupId}/owner")
+    public ResponseEntity<GroupResponseDto.Detail> transferOwnership(
+            final Authentication authentication,
+            @PathVariable final Long groupId,
+            @Valid @RequestBody final GroupRequestDto.OwnerTransfer request
+    ) {
+        final GroupResponseDto.Detail response = groupService.transferOwnership(
+                authentication.getName(),
+                groupId,
+                request
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 회원이 가입한 그룹 탈퇴
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 탈퇴할 그룹 ID
+     * @return 응답 본문 없는 성공 응답
+     */
+    @DeleteMapping("/{groupId}/members/me")
+    public ResponseEntity<Void> leaveGroup(
+            final Authentication authentication,
+            @PathVariable final Long groupId
+    ) {
+        groupService.leaveGroup(authentication.getName(), groupId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 그룹장의 활동 중인 그룹원 내보내기
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 그룹원을 내보낼 그룹 ID
+     * @param memberId 내보낼 그룹원 ID
+     * @return 응답 본문 없는 성공 응답
+     */
+    @DeleteMapping("/{groupId}/members/{memberId}")
+    public ResponseEntity<Void> kickMember(
+            final Authentication authentication,
+            @PathVariable final Long groupId,
+            @PathVariable final Long memberId
+    ) {
+        groupService.kickMember(authentication.getName(), groupId, memberId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 그룹장만 남은 그룹의 완전 삭제
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 삭제할 그룹 ID
+     * @return 응답 본문 없는 성공 응답
+     */
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<Void> deleteGroup(
+            final Authentication authentication,
+            @PathVariable final Long groupId
+    ) {
+        groupService.deleteGroup(authentication.getName(), groupId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 회원이 참여 중인 그룹의 그룹원 목록 조회
+     *
+     * @param authentication 로그인 회원 인증 정보
+     * @param groupId 조회할 그룹 ID
+     * @return 활동 중인 그룹원 정보 목록 응답
+     */
+    @GetMapping("/{groupId}/members")
+    public ResponseEntity<List<GroupResponseDto.Member>> getGroupMembers(
+            final Authentication authentication,
+            @PathVariable final Long groupId
+    ) {
+        final List<GroupResponseDto.Member> response = groupService.getGroupMembers(
+                authentication.getName(),
+                groupId
+        );
+        return ResponseEntity.ok(response);
+    }
+}

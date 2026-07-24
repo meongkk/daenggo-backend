@@ -48,6 +48,8 @@ services:
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET를 .env에 설정하세요}"
       JWT_ISSUER: "${JWT_ISSUER:-daenggo-api}"
       JWT_ACCESS_TOKEN_EXPIRATION_SECONDS: "${JWT_ACCESS_TOKEN_EXPIRATION_SECONDS:-900}"
+      TOUR_API_BASE_URL: "${TOUR_API_BASE_URL}"
+      TOUR_API_SERVICE_KEY: "${TOUR_API_SERVICE_KEY}"
     volumes:
       - community-uploads:/app/uploads
 
@@ -61,16 +63,13 @@ services:
         RUN npm ci
         COPY . .
         ARG VITE_BOARD_WRITE_API_URL
-        ARG VITE_BOARD_WRITER_ID
         ENV VITE_BOARD_WRITE_API_URL=$${VITE_BOARD_WRITE_API_URL}
-        ENV VITE_BOARD_WRITER_ID=$${VITE_BOARD_WRITER_ID}
         RUN npm run build
 
         FROM nginx:alpine
         COPY --from=builder /app/dist /usr/share/nginx/html
       args:
         VITE_BOARD_WRITE_API_URL: /api/community/posts
-        VITE_BOARD_WRITER_ID: "${VITE_BOARD_WRITER_ID:-1}"
     image: daenggo-frontend:local
     container_name: daenggo-frontend
     restart: unless-stopped

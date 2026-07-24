@@ -18,6 +18,10 @@ public class PasswordEncoderConfig {
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
+
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        System.out.println(encoder.encode("1"));
+
         return new BCryptPasswordEncoder();
     }
 }

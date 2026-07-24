@@ -370,13 +370,16 @@ public class WalkService {
      * 산책 사진 조회
      */
 	@Transactional(readOnly = true)
+
 	public List<WalkPhotoResponse> getPhotos(String email, Long walkId) {
 
 	    WalkRecord walkRecord = walkRecordRepository.findById(walkId)
 	            .orElseThrow(() -> new IllegalArgumentException("산책 기록이 없습니다."));
 
 	    // 본인 산책인지 확인
+
 	    if (!walkRecord.getUser().getEmail().equals(email)) {
+
 	        throw new IllegalArgumentException("접근 권한이 없습니다.");
 	    }
 

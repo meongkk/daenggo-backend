@@ -1,5 +1,12 @@
 package com.daenggo.backend.place.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.daenggo.backend.place.dto.PlaceReportRequest;
 import com.daenggo.backend.place.dto.PlaceReportResponse;
 import com.daenggo.backend.place.entity.Place;
@@ -8,11 +15,8 @@ import com.daenggo.backend.place.repository.PlaceReportRepository;
 import com.daenggo.backend.place.repository.PlaceRepository;
 import com.daenggo.backend.user.entity.User;
 import com.daenggo.backend.user.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class PlaceReportService {
     private final PlaceReportRepository reportRepository;
     private final PlaceRepository placeRepository;
     private final UserRepository userRepository;
+    private final PolicyHistoryService policyHistoryService;
 
     /** 장소 정보 오류 신고 등록 (상태는 PENDING으로 자동 설정) */
     @Transactional
@@ -96,5 +101,53 @@ public class PlaceReportService {
         if (!report.getUser().getId().equals(userId)) {
             throw new IllegalStateException("본인이 작성한 신고만 처리할 수 있습니다.");
         }
+    }
+    
+    /**
+     * 신고를 승인하고 출입 조건을 수정한다.
+     *
+     * 조건 변경 시 변경 이력이 함께 기록된다.
+     * 관리자 기능이므로 추후 권한 검증이 필요하다.
+     */
+    @Transactional
+    public int approveReport(Long reportId,
+                             String indoorStatus,
+                             String leashRequired,
+                             String muzzleRequired,
+                             String dangerousAllowed,
+                             BigDecimal maxWeight,
+                             String allowedSize) {
+
+        PlaceReport report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new IllegalArgumentException("신고를 찾을 수 없습니다."));
+
+        if (!report.isPending()) {
+            throw new IllegalStateException("이미 처리된 신고입니다.");
+        }
+
+        int recorded = policyHistoryService.updateWithHistory(
+                report.getPlace().getPlaceId(),
+                indoorStatus, leashRequired, muzzleRequired,
+                dangerousAllowed, maxWeight, allowedSize,
+                "USER_REPORT");
+
+        report.approve();
+        return recorded;
+    }
+
+    /**
+     * 신고를 반려한다.
+     *
+     * 관리자 기능이므로 추후 권한 검증이 필요하다.
+     */
+    @Transactional
+    public void rejectReport(Long reportId) {
+        PlaceReport report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new IllegalArgumentException("신고를 찾을 수 없습니다."));
+
+        if (!report.isPending()) {
+            throw new IllegalStateException("이미 처리된 신고입니다.");
+        }
+        report.reject();
     }
 }

@@ -58,8 +58,8 @@ public class PlaceConverter {
         }
     }
 
-    /** "20251023143000" 형식 문자열을 LocalDateTime으로 변환 */
-    private LocalDateTime toDateTime(String value) {
+    /** "20251023143000" 형식 문자열을 LocalDateTime으로 변환 (실패 시 null) */
+    public LocalDateTime toDateTime(String value) {      
         if (value == null || value.isBlank()) return null;
         try {
             return LocalDateTime.parse(value, API_DATE_FORMAT);

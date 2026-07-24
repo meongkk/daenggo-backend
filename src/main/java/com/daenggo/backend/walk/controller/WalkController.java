@@ -153,6 +153,22 @@ public class WalkController {
 	}
 	
 
+
+	/**
+	 * 산책 사진 조회
+	 */
+	@GetMapping("/{walkId}/photos")
+	public ResponseEntity<List<WalkPhotoResponse>> getPhotos(
+	        @RequestParam Long userId,
+	        @PathVariable Long walkId) {
+
+	    return ResponseEntity.ok(
+	        walkService.getPhotos(userId, walkId)
+	    );
+	}
+	
+
+
 	/**
 	 * 산책 사진 삭제
 	 */

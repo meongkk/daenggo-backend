@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 //import org.springframework.security.core.annotation.AuthenticationPrincipal;
 //import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -42,16 +43,15 @@ public class WalkController {
 
 	@PostMapping
     public ResponseEntity<WalkStartResponse> startWalk(
-    		@RequestParam Long userId) {
+    		final Authentication authentication) {
 
-		WalkStartResponse response = walkService.startWalk(userId);
+		WalkStartResponse response = walkService.startWalk(authentication.getName());
 
 	    return ResponseEntity.ok(response);
     }
 	
 	@PostMapping("/{walkId}/track-points/batch")
 	public ResponseEntity<Void> saveRoute(
-			@RequestParam Long userId, 
 			@PathVariable Long walkId, 
 			@RequestBody WalkRouteBatchRequest request){
 
@@ -62,11 +62,10 @@ public class WalkController {
 	
 	@PatchMapping("/{walkId}/complete")
 	public ResponseEntity<WalkCompleteResponse> completeWalk(
-	        @RequestParam Long userId,
 	        @PathVariable Long walkId,
 	        @RequestBody WalkCompleteRequest request) {
 
-	    return ResponseEntity.ok(walkService.completeWalk(userId, walkId, request));
+	    return ResponseEntity.ok(walkService.completeWalk(walkId, request));
 	}
 
 	/**
@@ -74,10 +73,10 @@ public class WalkController {
 	 */
 	@GetMapping("/{walkId}")
 	public ResponseEntity<WalkDetailResponse> getWalk(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId) {
 
-	    return ResponseEntity.ok(walkService.getWalk(userId, walkId));
+	    return ResponseEntity.ok(walkService.getWalk(authentication.getName(), walkId));
 	}
 
 	/**
@@ -85,10 +84,10 @@ public class WalkController {
 	 */
 	@GetMapping("/{walkId}/route")
 	public ResponseEntity<WalkRouteResponse> getRoute(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId) {
 
-	    return ResponseEntity.ok(walkService.getWalkRoute(userId, walkId));
+	    return ResponseEntity.ok(walkService.getWalkRoute(authentication.getName(), walkId));
 	}
 
 	/**
@@ -96,11 +95,11 @@ public class WalkController {
 	 */
 	@PatchMapping("/{walkId}")
 	public ResponseEntity<WalkDetailResponse> updateWalk(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId,
 	        @RequestBody WalkUpdateRequest request) {
 
-	    return ResponseEntity.ok(walkService.updateWalk(userId, walkId, request));
+	    return ResponseEntity.ok(walkService.updateWalk(authentication.getName(), walkId, request));
 	}
 
 	/**
@@ -108,10 +107,10 @@ public class WalkController {
 	 */
 	@DeleteMapping("/{walkId}")
 	public ResponseEntity<Void> deleteWalk(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId) {
 
-	    walkService.deleteWalk(userId, walkId);
+	    walkService.deleteWalk(authentication.getName(), walkId);
 	    return ResponseEntity.noContent().build();
 	}
 
@@ -120,11 +119,11 @@ public class WalkController {
 	 */
 	@GetMapping("/calendar")
 	public ResponseEntity<WalkCalendarResponse> getCalendar(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @RequestParam int year,
 	        @RequestParam int month) {
 
-	    return ResponseEntity.ok(walkService.getCalendar(userId, year, month));
+	    return ResponseEntity.ok(walkService.getCalendar(authentication.getName(), year, month));
 	}
 
 	/**
@@ -133,13 +132,28 @@ public class WalkController {
 	@PostMapping(value = "/{walkId}/photos",
 			consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<WalkPhotoResponse> uploadPhoto(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId,
 	        @ModelAttribute WalkPhotoUploadRequest request) {
 
-	    return ResponseEntity.ok(walkService.uploadPhoto(userId, walkId, request));
+	    return ResponseEntity.ok(walkService.uploadPhoto(authentication.getName(), walkId, request));
 	}
 	
+	/**
+	 * 산책 사진 조회
+	 */
+	@GetMapping("/{walkId}/photos")
+	public ResponseEntity<List<WalkPhotoResponse>> getPhotos(
+			final Authentication authentication,
+	        @PathVariable Long walkId) {
+
+	    return ResponseEntity.ok(
+	        walkService.getPhotos(authentication.getName(), walkId)
+	    );
+	}
+	
+
+
 	/**
 	 * 산책 사진 조회
 	 */
@@ -154,16 +168,17 @@ public class WalkController {
 	}
 	
 
+
 	/**
 	 * 산책 사진 삭제
 	 */
 	@DeleteMapping("/{walkId}/photos/{photoId}")
 	public ResponseEntity<Void> deletePhoto(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId,
 	        @PathVariable Long photoId) {
 
-	    walkService.deletePhoto(userId, walkId, photoId);
+	    walkService.deletePhoto(authentication.getName(), walkId, photoId);
 	    return ResponseEntity.noContent().build();
 	}
 	 

@@ -70,4 +70,9 @@ public class Place {
         this.restDate = restDate;
         this.parking = parking;
     }
+    
+    /** 관광공사 수정일시 갱신 (동기화 시) */
+    public void updateApiModifiedAt(LocalDateTime apiModifiedAt) {
+        this.apiModifiedAt = apiModifiedAt;
+    }
 }

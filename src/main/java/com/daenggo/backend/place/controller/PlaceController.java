@@ -13,8 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.daenggo.backend.place.dto.PlaceDetailResponse;
 import com.daenggo.backend.place.dto.PlaceNearbyResponse;
 import com.daenggo.backend.place.dto.PlaceSearchCondition;
+import com.daenggo.backend.place.dto.PolicyChangeResponse;
 import com.daenggo.backend.place.dto.RegionCountResponse;
 import com.daenggo.backend.place.service.PlaceService;
+import com.daenggo.backend.place.service.PolicyHistoryService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class PlaceController {
 
     private final PlaceService placeService;
+    private final PolicyHistoryService policyHistoryService;
 
     /** 지도 영역 + 조건 필터로 장소 목록 조회 (마커용) */
     @GetMapping("/nearby")
@@ -81,5 +84,11 @@ public class PlaceController {
     @GetMapping("/regions/list")
     public List<RegionCountResponse> getRegions() {
         return placeService.getRegions();
+    }
+    
+    /** 장소 출입 규정 변경 이력 조회 */
+    @GetMapping("/{placeId}/policy-history")
+    public List<PolicyChangeResponse> getPolicyHistory(@PathVariable Long placeId) {
+        return policyHistoryService.getHistory(placeId);
     }
 }

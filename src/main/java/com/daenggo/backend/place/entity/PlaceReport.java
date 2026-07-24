@@ -60,4 +60,14 @@ public class PlaceReport {
     public boolean isPending() {
         return "PENDING".equals(this.status);
     }
+    
+    /** 신고 승인 처리 */
+    public void approve() {
+        this.status = "APPROVED";
+    }
+
+    /** 신고 반려 처리 */
+    public void reject() {
+        this.status = "REJECTED";
+    }
 }

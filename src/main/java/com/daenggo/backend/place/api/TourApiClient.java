@@ -158,4 +158,37 @@ public class TourApiClient {
             return null;
         }
     }
+    
+    /**
+     * 지역 코드 기반 반려동물 동반 장소 목록 조회 (areaBasedList2)
+     *
+     * 좌표+반경 방식과 달리 지역 전체를 페이징으로 수집할 수 있다.
+     *
+     * @param areaCode  관광공사 지역 코드 (1 서울, 39 제주 등)
+     * @param pageNo    페이지 번호 (1부터)
+     * @param numOfRows 페이지당 개수
+     */
+    public List<TourApiResponse.Item> getPlacesByArea(String areaCode, int pageNo, int numOfRows) {
+
+        URI uri = UriComponentsBuilder
+                .fromUriString(baseUrl + "/areaBasedList2")
+                .queryParam("serviceKey", serviceKey)
+                .queryParam("MobileOS", "ETC")
+                .queryParam("MobileApp", "daenggo")
+                .queryParam("areaCode", areaCode)
+                .queryParam("pageNo", pageNo)
+                .queryParam("numOfRows", numOfRows)
+                .queryParam("_type", "json")
+                .build(true)
+                .toUri();
+
+        try {
+            TourApiResponse response = restClient.get().uri(uri)
+                    .retrieve().body(TourApiResponse.class);
+            return extractItems(response);
+        } catch (Exception e) {
+            log.warn("지역별 장소 조회 실패 areaCode={}, pageNo={}", areaCode, pageNo, e);
+            return List.of();
+        }
+    }
 }

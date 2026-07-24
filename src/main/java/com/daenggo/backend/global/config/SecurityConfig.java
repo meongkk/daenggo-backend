@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> {
                     authorize
+                            .requestMatchers(HttpMethod.GET, "/api/community/images/**").permitAll()
                             .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                             .requestMatchers(HttpMethod.POST,
                                     "/api/auth/signup",
@@ -54,6 +55,18 @@ public class SecurityConfig {
                                     "/api/auth/check-email",
                                     "/api/auth/check-nickname"
                             ).permitAll();
+
+                    authorize
+                            .requestMatchers(HttpMethod.GET,
+                                    "/api/places/nearby",
+                                    "/api/places/nearby/pet",
+                                    "/api/places/search",
+                                    "/api/places/regions",
+                                    "/api/places/regions/list",
+                                    "/api/places/*",
+                                    "/api/places/*/policy-history"
+                            ).permitAll()
+                            .requestMatchers("/api/places/**").authenticated();
 
                     // 로그인 프론트가 완성되기 전 로컬 Docker에서만 임시 사용자 API를 허용한다.
                     if (allowUnauthenticatedDevelopmentApi) {

@@ -72,4 +72,9 @@ public class PlaceCondition {
         this.maxWeight = maxWeight;
         this.allowedSize = allowedSize;
     }
+    
+    /** 관광공사 원문 갱신 (API 동기화 시) */
+    public void updateRawText(String rawText) {
+        this.rawText = rawText;
+    }
 }

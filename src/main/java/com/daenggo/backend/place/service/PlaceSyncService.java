@@ -1,5 +1,11 @@
 package com.daenggo.backend.place.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.daenggo.backend.place.api.TourApiClient;
 import com.daenggo.backend.place.api.TourApiResponse;
 import com.daenggo.backend.place.converter.PlaceConditionConverter;
@@ -10,11 +16,9 @@ import com.daenggo.backend.place.entity.PlaceCondition;
 import com.daenggo.backend.place.repository.PlaceConditionRepository;
 import com.daenggo.backend.place.repository.PlaceRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
 
 /**
  * 관광공사 API 데이터를 우리 DB에 동기화
@@ -33,14 +37,21 @@ public class PlaceSyncService {
     private final PlaceIntroConverter introConverter;
     private final PlaceRepository placeRepository;
     private final PlaceConditionRepository conditionRepository;
+    private final PolicyHistoryService policyHistoryService;
+    
+    /** 지역별 동기화 시 한 페이지에 요청할 개수 */
+    private static final int AREA_PAGE_SIZE = 100;
+
+    /** 지역별 동기화 시 최대 페이지 수 (무한 루프 방지) */
+    private static final int AREA_MAX_PAGE = 10;
 
     /**
-     * 주변 장소를 조회하여 저장한다.
+     * 주변 장소를 조회하여 저장하거나 갱신한다.
      *
-     * 장소 기본 정보와 함께 반려동물 출입 조건, 소개 정보(전화번호·운영시간)도 조회한다.
-     * 이미 저장된 장소(contentId 중복)는 건너뛴다.
+     * 신규 장소는 저장하고, 기존 장소는 관광공사 수정일시가 더 최신인 경우에만
+     * 출입 조건을 다시 조회하여 변경 사항을 반영하고 이력을 기록한다.
      *
-     * @return 새로 저장된 장소 수
+     * @return 신규 저장된 장소 수
      */
     @Transactional
     public int syncNearbyPlaces(String mapX, String mapY, int radius, int numOfRows) {
@@ -49,22 +60,67 @@ public class PlaceSyncService {
                 tourApiClient.getNearbyPlaces(mapX, mapY, radius, numOfRows);
 
         int saved = 0;
+        int updated = 0;
 
         for (TourApiResponse.Item item : items) {
 
-            if (placeRepository.existsByContentId(item.contentid())) {
-                continue;
+            Place existing = placeRepository.findByContentId(item.contentid()).orElse(null);
+
+            if (existing == null) {
+                Place place = placeRepository.save(placeConverter.toEntity(item));
+                saveCondition(place);
+                saveIntro(place);
+                saved++;
+            } else if (isModified(existing, item)) {
+                if (refreshCondition(existing, item)) {
+                    updated++;
+                }
             }
-
-            Place place = placeRepository.save(placeConverter.toEntity(item));
-            saved++;
-
-            saveCondition(place);
-            saveIntro(place);
         }
 
-        log.info("장소 동기화 완료: 조회 {}건, 저장 {}건", items.size(), saved);
+        log.info("동기화 완료: 조회 {}건, 신규 {}건, 갱신 {}건", items.size(), saved, updated);
         return saved;
+    }
+    
+    /** 관광공사 수정일시가 저장된 값보다 최신인지 확인 */
+    private boolean isModified(Place place, TourApiResponse.Item item) {
+        LocalDateTime apiModified = placeConverter.toDateTime(item.modifiedtime());
+        if (apiModified == null || place.getApiModifiedAt() == null) {
+            return false;
+        }
+        return apiModified.isAfter(place.getApiModifiedAt());
+    }
+    
+    /**
+     * 출입 조건을 다시 조회해 변경 사항을 반영하고 이력을 기록한다.
+     *
+     * 출입 조건이 아직 저장되지 않은 장소는 신규 저장으로 처리한다.
+     *
+     * @return 실제로 변경된 항목이 있으면 true
+     */
+    private boolean refreshCondition(Place place, TourApiResponse.Item item) {
+
+        TourApiResponse.PetItem petItem =
+                tourApiClient.getPetTourDetail(place.getContentId());
+        if (petItem == null) {
+            return false;
+        }
+
+        // 기존 조건이 없으면 신규 저장 (이력 대상 아님)
+        if (!conditionRepository.existsByPlace_PlaceId(place.getPlaceId())) {
+            conditionRepository.save(conditionConverter.toEntity(place, petItem));
+            return false;
+        }
+
+        // 비교용으로 파싱만 수행 (저장하지 않음)
+        PlaceCondition parsed = conditionConverter.toEntity(place, petItem);
+
+        int recorded = policyHistoryService.updateFromApi(place.getPlaceId(), parsed);
+
+        // 수정일시 갱신 (다음 동기화 시 중복 처리 방지)
+        place.updateApiModifiedAt(placeConverter.toDateTime(item.modifiedtime()));
+
+        return recorded > 0;
     }
 
     /**
@@ -182,5 +238,52 @@ public class PlaceSyncService {
         }
         log.info("출입 조건 재파싱: {}건", count);
         return count;
+    }
+
+    /**
+     * 지역 코드 기준으로 장소를 동기화한다.
+     *
+     * 페이지를 순회하며 해당 지역의 장소를 모두 수집한다.
+     * 신규 장소는 저장하고, 기존 장소는 수정일시를 비교해 변경된 경우만 갱신한다.
+     *
+     * @return 신규 저장된 장소 수
+     */
+    @Transactional
+    public int syncByArea(String areaCode, String areaName) {
+
+        int saved = 0;
+        int updated = 0;
+
+        for (int page = 1; page <= AREA_MAX_PAGE; page++) {
+
+            List<TourApiResponse.Item> items =
+                    tourApiClient.getPlacesByArea(areaCode, page, AREA_PAGE_SIZE);
+
+            if (items.isEmpty()) {
+                break;
+            }
+
+            for (TourApiResponse.Item item : items) {
+                Place existing = placeRepository.findByContentId(item.contentid()).orElse(null);
+
+                if (existing == null) {
+                    Place place = placeRepository.save(placeConverter.toEntity(item));
+                    saveCondition(place);
+                    saveIntro(place);
+                    saved++;
+                } else if (isModified(existing, item) && refreshCondition(existing, item)) {
+                    updated++;
+                }
+            }
+
+            // 마지막 페이지면 종료
+            if (items.size() < AREA_PAGE_SIZE) {
+                break;
+            }
+        }
+
+        log.info("지역 동기화 완료: {}({}) 신규 {}건, 갱신 {}건",
+                areaName, areaCode, saved, updated);
+        return saved;
     }
 }

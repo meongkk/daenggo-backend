@@ -33,6 +33,7 @@ import com.daenggo.backend.walk.service.WalkService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
+/** JWT 로그인 사용자의 산책 기록 HTTP 요청을 처리한다. */
 @RestController
 @RequiredArgsConstructor
 @Log4j2
@@ -41,6 +42,7 @@ public class WalkController {
 
 	private final WalkService walkService;
 
+	/** JWT 로그인 사용자의 새 산책 기록을 시작한다. */
 	@PostMapping
     public ResponseEntity<WalkStartResponse> startWalk(
     		final Authentication authentication) {
@@ -50,22 +52,26 @@ public class WalkController {
 	    return ResponseEntity.ok(response);
     }
 	
+	/** JWT 로그인 사용자가 소유한 산책에 GPS 좌표를 일괄 저장한다. */
 	@PostMapping("/{walkId}/track-points/batch")
 	public ResponseEntity<Void> saveRoute(
+			final Authentication authentication,
 			@PathVariable Long walkId, 
 			@RequestBody WalkRouteBatchRequest request){
 
-        walkService.saveTrackPoints(walkId, request);
+        walkService.saveTrackPoints(authentication.getName(), walkId, request);
 
         return ResponseEntity.ok().build();
     }
 	
+	/** JWT 로그인 사용자가 소유한 산책을 완료 처리한다. */
 	@PatchMapping("/{walkId}/complete")
 	public ResponseEntity<WalkCompleteResponse> completeWalk(
+			final Authentication authentication,
 	        @PathVariable Long walkId,
 	        @RequestBody WalkCompleteRequest request) {
 
-	    return ResponseEntity.ok(walkService.completeWalk(walkId, request));
+	    return ResponseEntity.ok(walkService.completeWalk(authentication.getName(), walkId, request));
 	}
 
 	/**
@@ -151,22 +157,6 @@ public class WalkController {
 	        walkService.getPhotos(authentication.getName(), walkId)
 	    );
 	}
-	
-
-
-	/**
-	 * 산책 사진 조회
-	 */
-	@GetMapping("/{walkId}/photos")
-	public ResponseEntity<List<WalkPhotoResponse>> getPhotos(
-	        @RequestParam Long userId,
-	        @PathVariable Long walkId) {
-
-	    return ResponseEntity.ok(
-	        walkService.getPhotos(userId, walkId)
-	    );
-	}
-	
 
 
 	/**

@@ -78,9 +78,8 @@ public class WalkService {
 	/**
      * GPS 좌표 일괄 저장
      */
-	public void saveTrackPoints(Long walkId, WalkRouteBatchRequest request) {
-		WalkRecord walk = walkRecordRepository.findById(walkId)
-			    .orElseThrow(() -> new IllegalArgumentException("산책이 없습니다."));
+	public void saveTrackPoints(String email, Long walkId, WalkRouteBatchRequest request) {
+		WalkRecord walk = findOwnedWalk(email, walkId);
 		
 		List<RoutePointRequest> points = request.getTrackPoints();
 		
@@ -101,10 +100,8 @@ public class WalkService {
      * 산책 종료
      */
 	@Transactional
-	public WalkCompleteResponse completeWalk(Long walkId, WalkCompleteRequest request) {
-		
-		WalkRecord walk = walkRecordRepository.findById(walkId)
-		        .orElseThrow(() -> new IllegalArgumentException("산책이 없습니다."));
+	public WalkCompleteResponse completeWalk(String email, Long walkId, WalkCompleteRequest request) {
+		WalkRecord walk = findOwnedWalk(email, walkId);
 		
 		
 		
@@ -140,7 +137,7 @@ public class WalkService {
 		// 참여 반려동물 저장
 		for (Long petId : request.getPetIds()) {
 
-	        Pet pet = petRepository.findById(petId)
+	        Pet pet = petRepository.findByIdAndUserIdAndDeletedAtIsNull(petId, walk.getUser().getId())
 	                .orElseThrow(() -> new IllegalArgumentException("반려동물이 없습니다."));
 
 	        WalkRecordPet walkRecordPet = WalkRecordPet.builder()
@@ -437,6 +434,18 @@ public class WalkService {
 	    } catch (IOException e) {
 	        throw new RuntimeException("이미지 파일 삭제 실패", e);
 	    }
+	}
+
+	/**
+	 * JWT의 이메일로 사용자를 찾고, 해당 사용자가 소유한 산책 기록만 반환한다.
+	 * 다른 사용자의 walkId를 요청하면 산책 기록을 찾을 수 없다는 오류가 발생한다.
+	 */
+	private WalkRecord findOwnedWalk(String email, Long walkId) {
+		User user = userRepository.findByEmailAndDeletedAtIsNull(email)
+				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+		return walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
+				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 	}
 	
 	

@@ -1,23 +1,18 @@
 package com.daenggo.backend.place.controller;
 
-import java.util.List;
-
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.daenggo.backend.place.dto.PlaceReportRequest;
 import com.daenggo.backend.place.dto.PlaceReportResponse;
 import com.daenggo.backend.place.dto.ReportApproveRequest;
 import com.daenggo.backend.place.service.PlaceReportService;
-
+import com.daenggo.backend.place.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
+/** 장소 정보 오류 신고 API */
 @RestController
 @RequiredArgsConstructor
 public class PlaceReportController {
@@ -27,32 +22,32 @@ public class PlaceReportController {
     /** 장소 정보 오류 신고 등록 */
     @PostMapping("/api/places/{placeId}/reports")
     public Long createReport(@PathVariable Long placeId,
-                             @RequestParam Long userId,        // TODO: 인증에서 추출
+                             @AuthenticationPrincipal Jwt jwt,
                              @RequestBody PlaceReportRequest request) {
-        return reportService.createReport(userId, placeId, request);
+        return reportService.createReport(AuthUtil.userId(jwt), placeId, request);
     }
 
     /** 내 신고 목록 조회 */
     @GetMapping("/api/users/me/place-reports")
-    public List<PlaceReportResponse> getMyReports(@RequestParam Long userId) {  // TODO
-        return reportService.getMyReports(userId);
+    public List<PlaceReportResponse> getMyReports(@AuthenticationPrincipal Jwt jwt) {
+        return reportService.getMyReports(AuthUtil.userId(jwt));
     }
-    
+
     /** 신고 내용 수정 (대기 상태만 가능) */
     @PatchMapping("/api/place-reports/{reportId}")
     public void updateReport(@PathVariable Long reportId,
-                             @RequestParam Long userId,        // TODO: 인증에서 추출
+                             @AuthenticationPrincipal Jwt jwt,
                              @RequestBody PlaceReportRequest request) {
-        reportService.updateReport(userId, reportId, request);
+        reportService.updateReport(AuthUtil.userId(jwt), reportId, request);
     }
 
     /** 신고 취소 (대기 상태만 가능) */
     @DeleteMapping("/api/place-reports/{reportId}")
     public void cancelReport(@PathVariable Long reportId,
-                             @RequestParam Long userId) {      // TODO
-        reportService.cancelReport(userId, reportId);
+                             @AuthenticationPrincipal Jwt jwt) {
+        reportService.cancelReport(AuthUtil.userId(jwt), reportId);
     }
-    
+
     /**
      * 신고 승인 및 출입 조건 반영 (관리자용)
      *

@@ -34,7 +34,7 @@ build/
 
 .gradle/
 .idea/
-
+.AGENTS.md
 .env
 application-local.yml
 

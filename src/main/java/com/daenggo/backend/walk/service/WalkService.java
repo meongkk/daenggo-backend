@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.daenggo.backend.pet.entity.Pet;
@@ -23,6 +24,7 @@ import com.daenggo.backend.walk.dto.WalkRequest.WalkPhotoUploadRequest;
 import com.daenggo.backend.walk.dto.WalkRequest.WalkRouteBatchRequest;
 import com.daenggo.backend.walk.dto.WalkRequest.WalkUpdateRequest;
 import com.daenggo.backend.walk.dto.WalkResponse.RoutePointResponse;
+import com.daenggo.backend.walk.dto.WalkResponse.WalkCalendarItem;
 import com.daenggo.backend.walk.dto.WalkResponse.WalkCalendarResponse;
 import com.daenggo.backend.walk.dto.WalkResponse.WalkCompleteResponse;
 import com.daenggo.backend.walk.dto.WalkResponse.WalkDetailResponse;
@@ -38,7 +40,6 @@ import com.daenggo.backend.walk.repository.WalkRecordPetRepository;
 import com.daenggo.backend.walk.repository.WalkRecordRepository;
 import com.daenggo.backend.walk.repository.WalkRouteRecordRepository;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -55,10 +56,11 @@ public class WalkService {
 	/**
      * 산책 시작
      */
-	public WalkStartResponse startWalk(Long userId) {
+	public WalkStartResponse startWalk(String email) {
 		
-		User user = userRepository.findById(userId)
+		final User user = userRepository.findByEmailAndDeletedAtIsNull(email)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+		
 		WalkRecord walk = WalkRecord.builder()
 				.user(user)
 				.build();
@@ -76,9 +78,8 @@ public class WalkService {
 	/**
      * GPS 좌표 일괄 저장
      */
-	public void saveTrackPoints(Long walkId, WalkRouteBatchRequest request) {
-		WalkRecord walk = walkRecordRepository.findById(walkId)
-			    .orElseThrow(() -> new IllegalArgumentException("산책이 없습니다."));
+	public void saveTrackPoints(String email, Long walkId, WalkRouteBatchRequest request) {
+		WalkRecord walk = findOwnedWalk(email, walkId);
 		
 		List<RoutePointRequest> points = request.getTrackPoints();
 		
@@ -99,10 +100,8 @@ public class WalkService {
      * 산책 종료
      */
 	@Transactional
-	public WalkCompleteResponse completeWalk(Long userId, Long walkId, WalkCompleteRequest request) {
-		
-		WalkRecord walk = walkRecordRepository.findById(walkId)
-		        .orElseThrow(() -> new IllegalArgumentException("산책이 없습니다."));
+	public WalkCompleteResponse completeWalk(String email, Long walkId, WalkCompleteRequest request) {
+		WalkRecord walk = findOwnedWalk(email, walkId);
 		
 		
 		
@@ -138,7 +137,7 @@ public class WalkService {
 		// 참여 반려동물 저장
 		for (Long petId : request.getPetIds()) {
 
-	        Pet pet = petRepository.findById(petId)
+	        Pet pet = petRepository.findByIdAndUserIdAndDeletedAtIsNull(petId, walk.getUser().getId())
 	                .orElseThrow(() -> new IllegalArgumentException("반려동물이 없습니다."));
 
 	        WalkRecordPet walkRecordPet = WalkRecordPet.builder()
@@ -161,13 +160,13 @@ public class WalkService {
 	/**
      * 산책 상세 조회
      */
-	public WalkDetailResponse getWalk(Long userId, Long walkId) {
+	public WalkDetailResponse getWalk(String email, Long walkId) {
 		
-		User user = userRepository.findById(userId)
+		final User user = userRepository.findByEmailAndDeletedAtIsNull(email)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
 
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 
 		
@@ -193,12 +192,12 @@ public class WalkService {
 	/**
      * 산책 경로 조회
      */
-	public WalkRouteResponse getWalkRoute(Long userId, Long walkId) {
-		User user = userRepository.findById(userId)
+	public WalkRouteResponse getWalkRoute(String email, Long walkId) {
+		final User user = userRepository.findByEmailAndDeletedAtIsNull(email)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
 
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		List<WalkRouteRecord> routeRecords = walkRouteRecordRepository.findByWalkRecordOrderBySequenceNoAsc(walk);
@@ -222,13 +221,13 @@ public class WalkService {
      * 산책 기록 수정
      */
 	@Transactional
-	public WalkDetailResponse updateWalk(Long userId, Long walkId, WalkUpdateRequest request) {
+	public WalkDetailResponse updateWalk(String email, Long walkId, WalkUpdateRequest request) {
 		
-		User user = userRepository.findById(userId)
+		final User user = userRepository.findByEmailAndDeletedAtIsNull(email)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
 
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		walk.update(request.getTitle(), request.getMemo());
@@ -256,11 +255,11 @@ public class WalkService {
      * 산책 기록 삭제
      */
 	@Transactional
-	public void deleteWalk(Long userId, Long walkId) {
-		User user = userRepository.findById(userId)
+	public void deleteWalk(String email, Long walkId) {
+		final User user = userRepository.findByEmailAndDeletedAtIsNull(email)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		walk.delete();
@@ -270,20 +269,26 @@ public class WalkService {
 	/**
      * 월별 산책 목록 조회(캘린더용)
      */
-	public WalkCalendarResponse getCalendar(Long userId, int year, int month) {
-		User user = userRepository.findById(userId)
+	public WalkCalendarResponse getCalendar(String email, int year, int month) {
+		final User user = userRepository.findByEmailAndDeletedAtIsNull(email)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
-		LocalDateTime start = LocalDate.of(year, month, 1).atStartOfDay();
-	    LocalDateTime end = start.plusMonths(1);
-	    
-	    List<LocalDate> walkDates = walkRecordRepository.findByUserAndStartedAtBetween(user, start, end)
-	    		.stream().map(walk -> walk.getStartedAt().toLocalDate())
-	    		.distinct()
+		LocalDate firstDay = LocalDate.of(year, month, 1);
+
+		LocalDateTime start = firstDay.atStartOfDay();
+		LocalDateTime end = firstDay.plusMonths(1).atStartOfDay();
+		
+		List<WalkRecord> walks = walkRecordRepository.findByUserAndStartedAtBetweenAndIsDeletedFalse(user, start, end);
+		
+	    List<WalkCalendarItem> items = walks.stream()
+	    		.map(i -> WalkCalendarItem.builder()
+	    				.walkRecordId(i.getWalkRecordId())
+	    				.walkDate(i.getStartedAt().toLocalDate())
+	    				.build())
 	    		.toList();
 	    
 	    WalkCalendarResponse response = WalkCalendarResponse.builder()
-	    		.walkDates(walkDates)
+	    		.walks(items)
 	    		.build();
 	    
 		return response;
@@ -292,11 +297,11 @@ public class WalkService {
 	/**
      * 산책 사진 등록
      */
-	public WalkPhotoResponse uploadPhoto(Long userId, Long walkId, WalkPhotoUploadRequest request) {
-		User user = userRepository.findById(userId)
+	public WalkPhotoResponse uploadPhoto(String email, Long walkId, WalkPhotoUploadRequest request) {
+		final User user = userRepository.findByEmailAndDeletedAtIsNull(email)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		
-		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUser(walkId, user)
+		WalkRecord walk = walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
 				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 		
 		MultipartFile image = request.getImage();
@@ -347,7 +352,7 @@ public class WalkService {
 	    WalkPhoto savedPhoto = walkPhotoRepository.save(photo);
 
 	    WalkPhotoResponse response = WalkPhotoResponse.builder()
-        .photoId(savedPhoto.getWalkPhotoId())
+        .walkPhotoId(savedPhoto.getWalkPhotoId())
         .imageUrl(savedPhoto.getImageUrl())
         .caption(savedPhoto.getCaption())
         .latitude(savedPhoto.getLatitude())
@@ -357,12 +362,47 @@ public class WalkService {
 
 	    return response;
 	}
+	
+	/**
+     * 산책 사진 조회
+     */
+	@Transactional(readOnly = true)
+
+	public List<WalkPhotoResponse> getPhotos(String email, Long walkId) {
+
+	    WalkRecord walkRecord = walkRecordRepository.findById(walkId)
+	            .orElseThrow(() -> new IllegalArgumentException("산책 기록이 없습니다."));
+
+	    // 본인 산책인지 확인
+
+	    if (!walkRecord.getUser().getEmail().equals(email)) {
+
+	        throw new IllegalArgumentException("접근 권한이 없습니다.");
+	    }
+
+
+	    List<WalkPhoto> photos =
+	            walkPhotoRepository.findByWalkRecord_WalkRecordId(walkId);
+
+
+	    return photos.stream()
+	            .map(photo -> WalkPhotoResponse.builder()
+	                    .walkPhotoId(photo.getWalkPhotoId())
+	                    .imageUrl(photo.getImageUrl())
+	                    .caption(photo.getCaption())
+	                    .takenAt(photo.getTakenAt())
+	                    .latitude(photo.getLatitude())
+	                    .longitude(photo.getLongitude())
+	                    .build()
+	            )
+	            .toList();
+	}
 
 	/**
      * 산책 사진 삭제
      */
 	@Transactional
-	public void deletePhoto(Long userId, Long walkId, Long photoId) {
+	public void deletePhoto(String email, Long walkId, Long photoId) {
 		
 		WalkPhoto photo = walkPhotoRepository.findById(photoId)
 				.orElseThrow(() -> new IllegalArgumentException("사진을 찾을 수 없습니다."));
@@ -373,7 +413,7 @@ public class WalkService {
 	    }
 
 	    // 해당 산책의 주인이 맞는지 확인
-	    if (!photo.getWalkRecord().getUser().getId().equals(userId)) {
+	    if (!photo.getWalkRecord().getUser().getEmail().equals(email)) {
 	        throw new IllegalArgumentException("삭제 권한이 없습니다.");
 	    }
 
@@ -394,6 +434,18 @@ public class WalkService {
 	    } catch (IOException e) {
 	        throw new RuntimeException("이미지 파일 삭제 실패", e);
 	    }
+	}
+
+	/**
+	 * JWT의 이메일로 사용자를 찾고, 해당 사용자가 소유한 산책 기록만 반환한다.
+	 * 다른 사용자의 walkId를 요청하면 산책 기록을 찾을 수 없다는 오류가 발생한다.
+	 */
+	private WalkRecord findOwnedWalk(String email, Long walkId) {
+		User user = userRepository.findByEmailAndDeletedAtIsNull(email)
+				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+		return walkRecordRepository.findByWalkRecordIdAndUserAndIsDeletedFalse(walkId, user)
+				.orElseThrow(() -> new IllegalArgumentException("산책 기록을 찾을 수 없습니다."));
 	}
 	
 	

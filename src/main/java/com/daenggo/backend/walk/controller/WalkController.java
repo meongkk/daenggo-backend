@@ -1,7 +1,10 @@
 package com.daenggo.backend.walk.controller;
 
+import java.util.List;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 //import org.springframework.security.core.annotation.AuthenticationPrincipal;
 //import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,6 +33,7 @@ import com.daenggo.backend.walk.service.WalkService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
+/** JWT 로그인 사용자의 산책 기록 HTTP 요청을 처리한다. */
 @RestController
 @RequiredArgsConstructor
 @Log4j2
@@ -38,33 +42,36 @@ public class WalkController {
 
 	private final WalkService walkService;
 
+	/** JWT 로그인 사용자의 새 산책 기록을 시작한다. */
 	@PostMapping
     public ResponseEntity<WalkStartResponse> startWalk(
-    		@RequestParam Long userId) {
+    		final Authentication authentication) {
 
-		WalkStartResponse response = walkService.startWalk(userId);
+		WalkStartResponse response = walkService.startWalk(authentication.getName());
 
 	    return ResponseEntity.ok(response);
     }
 	
-	@PostMapping("{walkId}/track-points/batch")
+	/** JWT 로그인 사용자가 소유한 산책에 GPS 좌표를 일괄 저장한다. */
+	@PostMapping("/{walkId}/track-points/batch")
 	public ResponseEntity<Void> saveRoute(
-			@RequestParam Long userId, 
+			final Authentication authentication,
 			@PathVariable Long walkId, 
 			@RequestBody WalkRouteBatchRequest request){
 
-        walkService.saveTrackPoints(walkId, request);
+        walkService.saveTrackPoints(authentication.getName(), walkId, request);
 
         return ResponseEntity.ok().build();
     }
 	
-	@PostMapping("/{walkId}/complete")
+	/** JWT 로그인 사용자가 소유한 산책을 완료 처리한다. */
+	@PatchMapping("/{walkId}/complete")
 	public ResponseEntity<WalkCompleteResponse> completeWalk(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId,
 	        @RequestBody WalkCompleteRequest request) {
 
-	    return ResponseEntity.ok(walkService.completeWalk(userId, walkId, request));
+	    return ResponseEntity.ok(walkService.completeWalk(authentication.getName(), walkId, request));
 	}
 
 	/**
@@ -72,10 +79,10 @@ public class WalkController {
 	 */
 	@GetMapping("/{walkId}")
 	public ResponseEntity<WalkDetailResponse> getWalk(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId) {
 
-	    return ResponseEntity.ok(walkService.getWalk(userId, walkId));
+	    return ResponseEntity.ok(walkService.getWalk(authentication.getName(), walkId));
 	}
 
 	/**
@@ -83,10 +90,10 @@ public class WalkController {
 	 */
 	@GetMapping("/{walkId}/route")
 	public ResponseEntity<WalkRouteResponse> getRoute(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId) {
 
-	    return ResponseEntity.ok(walkService.getWalkRoute(userId, walkId));
+	    return ResponseEntity.ok(walkService.getWalkRoute(authentication.getName(), walkId));
 	}
 
 	/**
@@ -94,11 +101,11 @@ public class WalkController {
 	 */
 	@PatchMapping("/{walkId}")
 	public ResponseEntity<WalkDetailResponse> updateWalk(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId,
 	        @RequestBody WalkUpdateRequest request) {
 
-	    return ResponseEntity.ok(walkService.updateWalk(userId, walkId, request));
+	    return ResponseEntity.ok(walkService.updateWalk(authentication.getName(), walkId, request));
 	}
 
 	/**
@@ -106,10 +113,10 @@ public class WalkController {
 	 */
 	@DeleteMapping("/{walkId}")
 	public ResponseEntity<Void> deleteWalk(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId) {
 
-	    walkService.deleteWalk(userId, walkId);
+	    walkService.deleteWalk(authentication.getName(), walkId);
 	    return ResponseEntity.noContent().build();
 	}
 
@@ -118,11 +125,11 @@ public class WalkController {
 	 */
 	@GetMapping("/calendar")
 	public ResponseEntity<WalkCalendarResponse> getCalendar(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @RequestParam int year,
 	        @RequestParam int month) {
 
-	    return ResponseEntity.ok(walkService.getCalendar(userId, year, month));
+	    return ResponseEntity.ok(walkService.getCalendar(authentication.getName(), year, month));
 	}
 
 	/**
@@ -131,23 +138,37 @@ public class WalkController {
 	@PostMapping(value = "/{walkId}/photos",
 			consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<WalkPhotoResponse> uploadPhoto(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId,
 	        @ModelAttribute WalkPhotoUploadRequest request) {
 
-	    return ResponseEntity.ok(walkService.uploadPhoto(userId, walkId, request));
+	    return ResponseEntity.ok(walkService.uploadPhoto(authentication.getName(), walkId, request));
 	}
+	
+	/**
+	 * 산책 사진 조회
+	 */
+	@GetMapping("/{walkId}/photos")
+	public ResponseEntity<List<WalkPhotoResponse>> getPhotos(
+			final Authentication authentication,
+	        @PathVariable Long walkId) {
+
+	    return ResponseEntity.ok(
+	        walkService.getPhotos(authentication.getName(), walkId)
+	    );
+	}
+
 
 	/**
 	 * 산책 사진 삭제
 	 */
 	@DeleteMapping("/{walkId}/photos/{photoId}")
 	public ResponseEntity<Void> deletePhoto(
-	        @RequestParam Long userId,
+			final Authentication authentication,
 	        @PathVariable Long walkId,
 	        @PathVariable Long photoId) {
 
-	    walkService.deletePhoto(userId, walkId, photoId);
+	    walkService.deletePhoto(authentication.getName(), walkId, photoId);
 	    return ResponseEntity.noContent().build();
 	}
 	 

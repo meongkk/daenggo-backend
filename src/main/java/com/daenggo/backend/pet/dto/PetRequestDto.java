@@ -2,8 +2,10 @@ package com.daenggo.backend.pet.dto;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -22,8 +24,10 @@ public final class PetRequestDto {
         @Size(max = 50)
         private String name;
 
-        @NotNull
         private Long breedId;
+
+        @NotNull
+        private Boolean primary;
 
         @NotNull
         @DecimalMin("0.01")
@@ -45,6 +49,13 @@ public final class PetRequestDto {
 
         @Size(max = 50)
         private String breedText;
+
+        @AssertTrue(message = "견종 선택과 직접 입력은 동시에 사용할 수 없습니다.")
+        public boolean isBreedInputValid() {
+            final boolean hasBreedId = breedId != null;
+            final boolean hasBreedText = breedText != null && !breedText.isBlank();
+            return !hasBreedId || !hasBreedText;
+        }
     }
 
     @Getter
@@ -52,6 +63,7 @@ public final class PetRequestDto {
     public static class Update {
 
         @Size(max = 50)
+        @Pattern(regexp = ".*\\S.*", message = "이름은 공백일 수 없습니다.")
         private String name;
 
         private Long breedId;
@@ -61,6 +73,7 @@ public final class PetRequestDto {
         private BigDecimal weight;
 
         @Size(max = 20)
+        @Pattern(regexp = ".*\\S.*", message = "크기는 공백일 수 없습니다.")
         private String size;
 
         @Size(max = 500)
@@ -74,5 +87,12 @@ public final class PetRequestDto {
 
         @Size(max = 50)
         private String breedText;
+
+        @AssertTrue(message = "견종 선택과 직접 입력은 동시에 사용할 수 없습니다.")
+        public boolean isBreedInputValid() {
+            final boolean hasBreedId = breedId != null;
+            final boolean hasBreedText = breedText != null && !breedText.isBlank();
+            return !hasBreedId || !hasBreedText;
+        }
     }
 }

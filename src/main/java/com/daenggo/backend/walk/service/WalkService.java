@@ -124,8 +124,8 @@ public class WalkService {
 	    }
 		
 		walk.complete(request.getTitle(), 
-				request.getMemo(), 
-				LocalDateTime.now(),
+				request.getMemo(),
+				endedAt,
 				durationSec,
 				request.getDistanceM(),
 				avgPaceSec
